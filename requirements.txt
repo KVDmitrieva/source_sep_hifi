@@ -1,0 +1,15 @@
+torch==2.0.0
+torchvision==0.15.1
+numpy
+tqdm
+tensorboard
+matplotlib
+pandas
+
+speechbrain~=0.5.15
+datasets
+torch_audiomentations
+wandb
+pyctcdecode
+torchaudio~=2.0.0
+pillow
