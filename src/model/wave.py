@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.model.utils import fix_shapes
+from src.model.utils import fix_shapes_1d
 
 
 class WaveUNet(nn.Module):
@@ -26,7 +26,7 @@ class WaveUNet(nn.Module):
         for block, skip in zip(self.upsample, skips[::-1]):
             out = block(out, skip)
 
-        return self.epilog(x)
+        return self.epilog(out)
 
 
 class UpsampleBlock(nn.Module):
@@ -37,12 +37,12 @@ class UpsampleBlock(nn.Module):
             nn.Conv1d(in_channels=2 * width, out_channels=width, kernel_size=1)
         )
         self.blocks = nn.Sequential(*[BlockWidth(width, block_kernel, block_padding) for _ in range(block_depth)])
-        self.epilog = nn.Conv1d(in_channels=width, out_channels=2 * width, kernel_size=scale, stride=scale)
+        self.epilog = nn.Conv1d(in_channels=2 * width, out_channels=width, kernel_size=1)
 
     def forward(self, x, skip):
-        x = self.epilog(x)
-        x = self.block(x)
-        x, skip = fix_shapes(x, skip, mode='crop')
+        x = self.prolog(x)
+        x = self.blocks(x)
+        x, skip = fix_shapes_1d(x, skip, mode='pad')
         x = self.epilog(torch.cat([x, skip], dim=1))
         return x
 
@@ -54,7 +54,7 @@ class DownsampleBlock(nn.Module):
         self.epilog = nn.Conv1d(in_channels=width, out_channels=2 * width, kernel_size=scale, stride=scale)
 
     def forward(self, x):
-        out = self.block(x)
+        out = self.blocks(x)
         out = self.epilog(out)
         return out, x
 
@@ -65,7 +65,7 @@ class Bottleneck(nn.Module):
         self.blocks = nn.Sequential(*[BlockWidth(width, block_kernel, block_padding) for _ in range(block_depth)])
 
     def forward(self, x):
-        return self.block(x)
+        return self.blocks(x)
 
 
 class BlockWidth(nn.Module):

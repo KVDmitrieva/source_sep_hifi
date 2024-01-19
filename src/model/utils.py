@@ -8,7 +8,7 @@ def init_weights(module, mean=0.0, std=0.01):
         module.weight.data.normal_(mean=mean, std=std)
 
 
-def fix_shapes(x, skip, mode='crop'):
+def fix_shapes_1d(x, skip, mode='crop'):
     assert mode in ['crop', 'pad']
 
     diff = skip.shape[-1] - x.shape[-1]
@@ -18,6 +18,20 @@ def fix_shapes(x, skip, mode='crop'):
         return x, skip[..., diff:-diff]
 
     return F.pad(x, (0, diff)), skip
+
+
+def fix_shapes_2d(x, skip, mode='crop'):
+    assert mode in ['crop', 'pad']
+
+    diff2 = skip.shape[-2] - x.shape[-2]
+    diff1 = skip.shape[-1] - x.shape[-1]
+    if mode == 'crop':
+        diff1 = diff1 // 2
+        diff2 = diff2 // 2
+        return x, skip[..., diff2:-diff2, diff1:-diff1]
+
+    return F.pad(x, (0, diff1, 0, diff2)), skip
+
 
 
 def stft(x, n_fft=800):

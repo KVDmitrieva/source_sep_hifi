@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.model.utils import fix_shapes, stft, istft
+from src.model.utils import fix_shapes_2d, stft, istft
 
 
 class SpectralMaskNet(nn.Module):
@@ -11,9 +11,21 @@ class SpectralMaskNet(nn.Module):
         self.n_fft = n_fft
         self.spectral = SpectralUNet(**spectral_params)
 
+        self.spec_conv = nn.Conv1d(80, 513, 1)
+        self.reflection = nn.ReflectionPad1d((1, 0))
+
+
     def forward(self, x, spectral_out=None):
+        print("stft", x.shape, spectral_out.shape)
         magnitude, phase = stft(x, self.n_fft)
-        mag = magnitude if spectral_out is None else torch.cat([magnitude, spectral_out], dim=1)
+        mag = magnitude.unsqueeze(1)
+        print("mag", mag.shape)
+        if spectral_out is not None:
+            spectral_out = self.reflection(spectral_out)
+            spectral_out = self.spec_conv(spectral_out)
+            mag = torch.cat([mag, spectral_out.unsqueeze(1)], dim=1)
+        print("magnitude", x.shape, spectral_out.shape, mag.shape)
+        # mag = magnitude if spectral_out is None else
 
         mul_factor = F.softplus(self.spectral(mag))
         magnitude = magnitude * mul_factor
@@ -34,9 +46,9 @@ class SpectralUNet(nn.Module):
 
     def forward(self, x):
         skips = []
-        print(x.shape)
         out = self.prolog(x)
         for block in self.downsample:
+            print(out.shape)
             out, skip = block(out)
             skips.append(skip)
 
@@ -44,7 +56,7 @@ class SpectralUNet(nn.Module):
         for block, skip in zip(self.upsample, skips[::-1]):
             out = block(out, skip)
 
-        return self.epilog(x)
+        return self.epilog(out)
 
 
 class UpsampleBlock(nn.Module):
@@ -55,12 +67,12 @@ class UpsampleBlock(nn.Module):
             nn.Conv2d(in_channels=2 * width, out_channels=width, kernel_size=1)
         )
         self.blocks = nn.Sequential(*[BlockWidth(width, block_kernel, block_padding) for _ in range(block_depth)])
-        self.epilog = nn.Conv2d(in_channels=width, out_channels=2 * width, kernel_size=scale, stride=scale)
+        self.epilog = nn.Conv2d(in_channels=2 * width, out_channels=width, kernel_size=1)
 
     def forward(self, x, skip):
-        x = self.epilog(x)
+        x = self.prolog(x)
         x = self.blocks(x)
-        x, skip = fix_shapes(x, skip, mode='pad')
+        # x, skip = fix_shapes_2d(x, skip, mode='pad')
         x = self.epilog(torch.cat([x, skip], dim=1))
         return x
 
@@ -93,4 +105,3 @@ class BlockWidth(nn.Module):
 
     def forward(self, x):
         return x + self.block(F.leaky_relu(x))
-

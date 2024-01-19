@@ -15,12 +15,15 @@ class Generator(BaseModel):
         self.spec_mask = SpectralMaskNet(**spectral_mask_params)
         self.mode = mode
 
-    def forward(self, mel, audio=None):
+    def forward(self, mel, audio=None, **batch):
         spec_out = self.spec_unet(mel.unsqueeze(1))
+        spec_out = spec_out.squeeze(1)
         gen_out = self.generator(spec_out)
         if audio is not None:
             gen_out = torch.cat([gen_out, audio], dim=1)
 
-        wave_out = self.wave_unet(gen_out)
-        mask_out = self.spec_mask(wave_out, spec_out) if self.mode == 'vocoder' else self.spec_mask(wave_out)
-        return mask_out
+        wave_out = self.wave_unet(gen_out).squeeze(1)
+        if self.mode == 'vocoder':
+            return self.spec_mask(wave_out, spec_out)
+
+        return self.spec_mask(wave_out)
