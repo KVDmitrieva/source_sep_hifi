@@ -16,7 +16,7 @@ class Generator(BaseModel):
         self.mode = mode
 
     def forward(self, mel, audio=None):
-        spec_out = self.spec_unet(mel)
+        spec_out = self.spec_unet(mel.unsqueeze(1))
         gen_out = self.generator(spec_out)
         if audio is not None:
             gen_out = torch.cat([gen_out, audio], dim=1)

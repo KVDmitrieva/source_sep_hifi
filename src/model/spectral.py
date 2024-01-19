@@ -24,7 +24,7 @@ class SpectralMaskNet(nn.Module):
 
 class SpectralUNet(nn.Module):
     def __init__(self, in_channels: int, out_channels: int, width: list,
-                 scale: int, bottleneck_width: int, block_depth=4, kernel_size=1, padding=1):
+                 scale: int, bottleneck_width: int, block_depth=4, kernel_size=3, padding=1):
         super().__init__()
         self.prolog = nn.Conv2d(in_channels=in_channels, out_channels=width[0], kernel_size=kernel_size, padding=padding)
         self.downsample = nn.ModuleList([DownsampleBlock(w, scale, block_depth, kernel_size, padding) for w in width])
@@ -34,6 +34,7 @@ class SpectralUNet(nn.Module):
 
     def forward(self, x):
         skips = []
+        print(x.shape)
         out = self.prolog(x)
         for block in self.downsample:
             out, skip = block(out)
@@ -58,7 +59,7 @@ class UpsampleBlock(nn.Module):
 
     def forward(self, x, skip):
         x = self.epilog(x)
-        x = self.block(x)
+        x = self.blocks(x)
         x, skip = fix_shapes(x, skip, mode='pad')
         x = self.epilog(torch.cat([x, skip], dim=1))
         return x
@@ -71,7 +72,7 @@ class DownsampleBlock(nn.Module):
         self.epilog = nn.Conv2d(in_channels=width, out_channels=2 * width, kernel_size=scale, stride=scale)
 
     def forward(self, x):
-        out = self.block(x)
+        out = self.blocks(x)
         out = self.epilog(out)
         return out, x
 
@@ -82,7 +83,7 @@ class Bottleneck(nn.Module):
         self.blocks = nn.Sequential(*[BlockWidth(width, block_kernel, block_padding) for _ in range(block_depth)])
 
     def forward(self, x):
-        return self.block(x)
+        return self.blocks(x)
 
 
 class BlockWidth(nn.Module):
@@ -92,3 +93,4 @@ class BlockWidth(nn.Module):
 
     def forward(self, x):
         return x + self.block(F.leaky_relu(x))
+
