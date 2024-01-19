@@ -179,27 +179,27 @@
   },
   "data": {
     "train": {
-      "batch_size": 32,
+      "batch_size": 64,
       "num_workers": 0,
       "datasets": [
         {
           "type": "LJspeechDataset",
           "args": {
             "part": "train",
-            "limit": 32
+            "limit": 64
           }
         }
       ]
     },
     "val": {
-      "batch_size": 32,
+      "batch_size": 64,
       "num_workers": 0,
       "datasets": [
         {
           "type": "LJspeechDataset",
           "args": {
             "part": "train",
-            "limit": 32
+            "limit": 64
           }
         }
       ]
@@ -248,7 +248,7 @@
   "trainer": {
     "epochs": 1000,
     "save_dir": "saved/",
-    "save_period": 50,
+    "save_period": 200,
     "verbosity": 2,
     "monitor": "min val_loss",
     "early_stop": 100,
