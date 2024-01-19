@@ -15,7 +15,7 @@
     "spectrogram": []
   },
   "generator": {
-    "type": "Generator",
+    "type": "HiFiGenerator",
     "args": {
       "prolog_params": {
         "in_channels": 80,
