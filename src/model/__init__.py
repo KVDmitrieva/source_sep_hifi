@@ -1,4 +1,5 @@
-from src.model.hifi import *
+from src.model.discriminator import Discriminator
+from src.model.generator import Generator
 
 __all__ = [
     "Generator",
