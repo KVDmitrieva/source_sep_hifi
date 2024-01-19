@@ -230,7 +230,7 @@
     "monitor": "min val_loss",
     "early_stop": 100,
     "visualize": "wandb",
-    "wandb_project": "nv_project",
+    "wandb_project": "source_sep",
     "len_epoch": 150
   }
 }
