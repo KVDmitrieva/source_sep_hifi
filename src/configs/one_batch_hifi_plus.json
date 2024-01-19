@@ -31,33 +31,33 @@
       "generator_params": {
         "prolog_params": {
           "in_channels": 1,
-          "out_channels": 512,
+          "out_channels": 128,
           "kernel_size": 7,
           "padding": "same"
         },
         "upsampler_blocks_params": [
           {
             "upsampler_params": {
-              "in_channels": 512,
-              "out_channels": 256,
-              "kernel_size": 16,
-              "stride": 8,
-              "padding": 4
-            }
-          },
-          {
-            "upsampler_params": {
-              "in_channels": 256,
-              "out_channels": 128,
-              "kernel_size": 16,
-              "stride": 8,
-              "padding": 4
-            }
-          },
-          {
-            "upsampler_params": {
               "in_channels": 128,
               "out_channels": 64,
+              "kernel_size": 16,
+              "stride": 8,
+              "padding": 4
+            }
+          },
+          {
+            "upsampler_params": {
+              "in_channels": 64,
+              "out_channels": 32,
+              "kernel_size": 16,
+              "stride": 8,
+              "padding": 4
+            }
+          },
+          {
+            "upsampler_params": {
+              "in_channels": 32,
+              "out_channels": 16,
               "kernel_size": 4,
               "stride": 2,
               "padding": 1
@@ -65,8 +65,8 @@
           },
           {
             "upsampler_params": {
-              "in_channels": 64,
-              "out_channels": 32,
+              "in_channels": 16,
+              "out_channels": 8,
               "kernel_size": 4,
               "stride": 2,
               "padding": 1
