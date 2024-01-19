@@ -23,13 +23,11 @@ class HiFiGenerator(BaseModel):
         )
         self.apply(init_weights)
 
-    def forward(self, x):
-        x = self.prolog(x)
+    def forward(self, mel, **batch):
+        x = self.prolog(mel)
         x = self.upsampler(x)
         x = self.epilog(x)
-        return {
-            "generator_audio": x
-        }
+        return x
 
 
 class UpsamplerBlock(nn.Module):

@@ -150,7 +150,7 @@ class Trainer(BaseTrainer):
         batch = self.move_batch_to_device(batch, self.device)
 
         # generator_audio
-        batch.update(self.generator(batch["mel"]))
+        batch["generator_audio"] = self.generator(batch)
 
         if is_train:
             self.dis_optimizer.zero_grad()
