@@ -150,7 +150,7 @@ class Trainer(BaseTrainer):
         batch = self.move_batch_to_device(batch, self.device)
 
         # generator_audio
-        batch["generator_audio"] = self.generator(batch)
+        batch["generator_audio"] = self.generator(**batch)
 
         if is_train:
             self.dis_optimizer.zero_grad()
@@ -248,7 +248,7 @@ class Trainer(BaseTrainer):
             audio, mel = audio_mel
             mel = mel.to(self.device)
             with torch.no_grad():
-                gen_audio = self.generator(mel)["generator_audio"].squeeze(1)
+                gen_audio = self.generator(mel).squeeze(1)
 
             self.writer.add_audio(f"gen audio_{i + 1}", gen_audio.detach().cpu(), self.config["preprocessing"]["sr"])
             self.writer.add_audio(f"real audio_{i + 1}", audio, self.config["preprocessing"]["sr"])
