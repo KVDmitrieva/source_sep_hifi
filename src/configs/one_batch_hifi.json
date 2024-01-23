@@ -177,15 +177,15 @@
       }
     }
   },
-  "data": {
+   "data": {
     "train": {
       "batch_size": 64,
       "num_workers": 0,
       "datasets": [
         {
-          "type": "LJspeechDataset",
+          "type": "VCTKDataset",
           "args": {
-            "part": "train",
+            "part": "testset",
             "limit": 64
           }
         }
@@ -196,9 +196,9 @@
       "num_workers": 0,
       "datasets": [
         {
-          "type": "LJspeechDataset",
+          "type": "VCTKDataset",
           "args": {
-            "part": "train",
+            "part": "testset",
             "limit": 64
           }
         }
@@ -230,18 +230,41 @@
     "type": "DiscriminatorLoss",
     "args": {}
   },
-  "metrics": [],
+  "metrics": [
+    {
+      "type": "SISDRMetric",
+      "args": {
+        "name": "SI-SDR"
+      }
+    },
+    {
+      "type": "SDRMetric",
+      "args": {
+        "name": "SDR"
+      }
+    },
+    {
+      "type": "PESQMetric",
+      "args": {
+        "name": "PESQ"
+      }
+    },
+        {
+      "type": "STOIMetric",
+      "args": {
+        "name": "STOI"
+      }
+    }
+  ],
   "gen_lr_scheduler": {
-    "type": "StepLR",
+    "type": "ExponentialLR",
     "args": {
-      "step_size": 100,
       "gamma": 0.999
     }
   },
   "dis_lr_scheduler": {
-    "type": "StepLR",
+    "type": "ExponentialLR",
     "args": {
-      "step_size": 100,
       "gamma": 0.999
     }
   },
