@@ -33,19 +33,6 @@ class BaseDataset(Dataset):
         index = self._filter_records_from_dataset(index, limit)
         self._index: List[dict] = index
 
-    def __getitem__(self, ind):
-        data_dict = self._index[ind]
-        audio_path = data_dict["path"]
-        audio_wave = self.load_audio(audio_path)
-        if audio_wave.shape[-1] > self.max_len:
-            ind = random.randint(0, audio_wave.shape[-1] - self.max_len)
-            audio_wave = audio_wave[:, ind:ind + self.max_len]
-        audio_wave, audio_spec = self.process_wave(audio_wave)
-        return {
-            "audio": audio_wave,
-            "spectrogram": audio_spec
-        }
-
     @staticmethod
     def _sort_index(index):
         return sorted(index, key=lambda x: x["audio_len"])
@@ -55,7 +42,7 @@ class BaseDataset(Dataset):
 
     def load_audio(self, path):
         audio_tensor, sr = torchaudio.load(path)
-        audio_tensor = audio_tensor[0:1, :]  # remove all channels but the first
+        audio_tensor = audio_tensor[0:1, :]
         target_sr = self.config_parser["preprocessing"]["sr"]
         if sr != target_sr:
             audio_tensor = torchaudio.functional.resample(audio_tensor, sr, target_sr)
@@ -74,7 +61,11 @@ class BaseDataset(Dataset):
     @staticmethod
     def _filter_records_from_dataset(index: list, limit) -> list:
         if limit is not None:
-            random.seed(42)  # best seed for deep learning
+            random.seed(42)
             random.shuffle(index)
             index = index[:limit]
         return index
+
+    @staticmethod
+    def collate_fn():
+        raise NotImplementedError()

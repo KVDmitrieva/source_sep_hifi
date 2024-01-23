@@ -2,14 +2,20 @@ import json
 import logging
 import os
 import shutil
-from curses.ascii import isascii
+import random
 from pathlib import Path
 
+from tqdm import tqdm
+from typing import List
+
 import torchaudio
+from torch.nn.utils.rnn import pad_sequence
+from speechbrain.utils.data_utils import download_file
+
+from src.datasets.utils import MelSpectrogramConfig as config
 from src.datasets.base_dataset import BaseDataset
 from src.utils import ROOT_PATH
-from speechbrain.utils.data_utils import download_file
-from tqdm import tqdm
+
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +33,35 @@ class LJspeechDataset(BaseDataset):
         index = self._get_or_load_index(part)
 
         super().__init__(index, *args, **kwargs)
+
+    def __getitem__(self, ind):
+        data_dict = self._index[ind]
+        audio_path = data_dict["path"]
+        audio_wave = self.load_audio(audio_path)
+        if audio_wave.shape[-1] > self.max_len:
+            ind = random.randint(0, audio_wave.shape[-1] - self.max_len)
+            audio_wave = audio_wave[:, ind:ind + self.max_len]
+        audio_wave, audio_spec = self.process_wave(audio_wave)
+        return {
+            "audio": audio_wave,
+            "spectrogram": audio_spec
+        }
+
+    @staticmethod
+    def collate_fn(dataset_items: List[dict]):
+        """
+        Collate and pad fields in dataset items
+        """
+        spectrogram, audio = [], []
+
+        for item in dataset_items:
+            audio.append(item["audio"].T)
+            spectrogram.append(item["spectrogram"].squeeze(0).T)
+
+        return {
+            "audio": pad_sequence(audio, batch_first=True).transpose(1, 2),
+            "mel": pad_sequence(spectrogram, batch_first=True, padding_value=config.pad_value).transpose(1, 2)
+        }
 
     def _load_dataset(self):
         arch_path = self._data_dir / "LJSpeech-1.1.tar.bz2"
@@ -48,7 +83,6 @@ class LJspeechDataset(BaseDataset):
             else:
                 shutil.move(str(fpath), str(self._data_dir / "test" / fpath.name))
         shutil.rmtree(str(self._data_dir / "wavs"))
-
 
     def _get_or_load_index(self, part):
         index_path = self._data_dir / f"{part}_index.json"
