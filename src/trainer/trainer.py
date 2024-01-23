@@ -248,7 +248,7 @@ class Trainer(BaseTrainer):
             audio, mel = audio_mel
             mel = mel.to(self.device)
             with torch.no_grad():
-                gen_audio = self.generator(mel, audio.unsqueeze(1)).squeeze(1)
+                gen_audio = self.generator(mel, audio=audio.unsqueeze(1)).squeeze(1)
 
             self.writer.add_audio(f"gen audio_{i + 1}", gen_audio.detach().cpu(), self.config["preprocessing"]["sr"])
             self.writer.add_audio(f"real audio_{i + 1}", audio, self.config["preprocessing"]["sr"])
