@@ -1,7 +1,7 @@
 from torch import Tensor
-
-from hw_ss.metric.base_metric import BaseMetric
 from torchmetrics import ScaleInvariantSignalDistortionRatio
+
+from src.metric.base_metric import BaseMetric
 
 
 class SISDRMetric(BaseMetric):
