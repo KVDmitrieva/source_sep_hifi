@@ -34,7 +34,7 @@ def fix_shapes_2d(x, skip, mode='crop'):
 
 
 def stft(x, n_fft=800):
-    window = torch.hann_window(n_fft)
+    window = torch.hann_window(n_fft).to(x.device)
     spectrum = torch.stft(x, n_fft=n_fft, window=window, return_complex=True)
     spectrum = torch.view_as_real(spectrum)
 
@@ -47,7 +47,7 @@ def stft(x, n_fft=800):
 def istft(mag, phase, n_fft=800):
     spectrum = torch.complex(mag * torch.cos(phase), mag * torch.sin(phase))
 
-    window = torch.hann_window(n_fft)
+    window = torch.hann_window(n_fft).to(spectrum.device)
     x = torch.istft(spectrum, n_fft=n_fft, window=window)
 
     return x
