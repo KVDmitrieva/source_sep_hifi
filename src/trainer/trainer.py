@@ -123,7 +123,7 @@ class Trainer(BaseTrainer):
                 )
 
                 self._log_triplet_audio(batch)
-                self._log_spectrogram(batch["gen_mel"], name="gen_mel")
+                self._log_triplet_spectrogram(batch)
                 self._log_scalars(self.train_metrics)
                 # we don't want to reset train metrics at the start of every epoch
                 # because we are interested in recent train metrics
@@ -216,7 +216,7 @@ class Trainer(BaseTrainer):
             self.writer.set_step(epoch * self.len_epoch, part)
             self._log_scalars(self.evaluation_metrics)
             self._log_triplet_audio(batch)
-            self._log_spectrogram(batch["gen_mel"], name="gen_mel")
+            self._log_triplet_spectrogram(batch)
 
         # add histogram of model parameters to the tensorboard
         for name, p in self.generator.named_parameters():
@@ -245,6 +245,12 @@ class Trainer(BaseTrainer):
         self.writer.add_audio("noisy", batch["audio"][ind].cpu(), self.config["preprocessing"]["sr"])
         self.writer.add_audio("generated", batch["generator_audio"][ind].cpu(), self.config["preprocessing"]["sr"])
         self.writer.add_audio("target", batch["target_audio"][ind].cpu(), self.config["preprocessing"]["sr"])
+
+    def _log_triplet_spectrogram(self, batch):
+        ind = random.randint(0, batch["mel"].shape[0] - 1)
+        self.writer.add_audio("noisy", batch["mel"][ind].cpu(), self.config["preprocessing"]["sr"])
+        self.writer.add_audio("generated", batch["gen_mel"][ind].cpu(), self.config["preprocessing"]["sr"])
+        self.writer.add_audio("target", batch["target_mel"][ind].cpu(), self.config["preprocessing"]["sr"])
 
     def _log_audio(self, audio_batch, name="audio"):
         audio = random.choice(audio_batch.detach().cpu())
