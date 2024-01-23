@@ -243,7 +243,7 @@ class Trainer(BaseTrainer):
     def _log_triplet_audio(self, batch):
         ind = random.randint(0, batch["audio"].shape[0] - 1)
         self.writer.add_audio("noisy", batch["audio"][ind].cpu(), self.config["preprocessing"]["sr"])
-        self.writer.add_audio("generated", batch["gen_audio"][ind].cpu(), self.config["preprocessing"]["sr"])
+        self.writer.add_audio("generated", batch["generator_audio"][ind].cpu(), self.config["preprocessing"]["sr"])
         self.writer.add_audio("target", batch["target_audio"][ind].cpu(), self.config["preprocessing"]["sr"])
 
     def _log_audio(self, audio_batch, name="audio"):
