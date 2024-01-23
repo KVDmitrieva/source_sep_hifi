@@ -1,5 +1,5 @@
 {
-  "name": "HiFi++",
+  "name": "one_batch_plus_enhancment",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 22050,
@@ -225,7 +225,32 @@
     "type": "DiscriminatorLoss",
     "args": {}
   },
-  "metrics": [],
+  "metrics": [
+    {
+      "type": "SISDRMetric",
+      "args": {
+        "name": "SI-SDR"
+      }
+    },
+    {
+      "type": "SDRMetric",
+      "args": {
+        "name": "SDR"
+      }
+    },
+    {
+      "type": "PESQMetric",
+      "args": {
+        "name": "PESQ"
+      }
+    },
+        {
+      "type": "STOIMetric",
+      "args": {
+        "name": "STOI"
+      }
+    }
+  ],
   "gen_lr_scheduler": {
     "type": "ExponentialLR",
     "args": {
