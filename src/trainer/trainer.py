@@ -61,7 +61,7 @@ class Trainer(BaseTrainer):
         """
         Move all necessary tensors to the GPU
         """
-        for tensor_for_gpu in ["mel", "audio"]:
+        for tensor_for_gpu in ["mel", "audio", "target_audio", "target_mel"]:
             batch[tensor_for_gpu] = batch[tensor_for_gpu].to(device)
         return batch
 
@@ -121,9 +121,8 @@ class Trainer(BaseTrainer):
                 self.writer.add_scalar(
                     "dis learning rate", self.dis_lr_scheduler.get_last_lr()[0]
                 )
-                self._log_predictions(**batch)
-                self._log_audio(batch["generator_audio"], name="generated audio")
-                self._log_spectrogram(batch["mel"], name="real mel")
+
+                self._log_triplet_audio(batch)
                 self._log_spectrogram(batch["gen_mel"], name="gen_mel")
                 self._log_scalars(self.train_metrics)
                 # we don't want to reset train metrics at the start of every epoch
@@ -156,7 +155,7 @@ class Trainer(BaseTrainer):
             self.dis_optimizer.zero_grad()
 
         # real_discriminator_out, real_feature_map
-        batch.update(self.discriminator(batch["audio"]))
+        batch.update(self.discriminator(batch["target_audio"]))
 
         # gen_discriminator_out, gen_feature_map
         batch.update(self.discriminator(batch["generator_audio"].detach(), prefix="gen"))
@@ -172,7 +171,7 @@ class Trainer(BaseTrainer):
         if is_train:
             self.gen_optimizer.zero_grad()
 
-        batch.update(self.discriminator(batch["audio"]))
+        batch.update(self.discriminator(batch["target_audio"]))
         batch.update(self.discriminator(batch["generator_audio"], prefix="gen"))
 
         batch["gen_mel"] = self.mel_spec(batch["generator_audio"]).squeeze(1)
@@ -216,10 +215,8 @@ class Trainer(BaseTrainer):
                 )
             self.writer.set_step(epoch * self.len_epoch, part)
             self._log_scalars(self.evaluation_metrics)
-            self._log_predictions(**batch)
-            self._log_spectrogram(batch["mel"], name="real mel")
+            self._log_triplet_audio(batch)
             self._log_spectrogram(batch["gen_mel"], name="gen_mel")
-            self._log_audio(batch["generator_audio"], name="generated audio")
 
         # add histogram of model parameters to the tensorboard
         for name, p in self.generator.named_parameters():
@@ -238,28 +235,16 @@ class Trainer(BaseTrainer):
             total = self.len_epoch
         return base.format(current, total, 100.0 * current / total)
 
-    def _log_predictions(self, *args, **kwargs):
-        if self.writer is None:
-            return
-
-        is_training = self.generator.training
-        self.generator.eval()
-        for i , audio_mel in enumerate(zip(self.test_audio, self.test_mel)):
-            audio, mel = audio_mel
-            mel = mel.to(self.device)
-            with torch.no_grad():
-                gen_audio = self.generator(mel, audio=audio.unsqueeze(1).to(self.device)).squeeze(1)
-
-            self.writer.add_audio(f"gen audio_{i + 1}", gen_audio.detach().cpu(), self.config["preprocessing"]["sr"])
-            self.writer.add_audio(f"real audio_{i + 1}", audio, self.config["preprocessing"]["sr"])
-
-        if is_training:
-            self.generator.train()
-
     def _log_spectrogram(self, spectrogram_batch, name="spectrogram"):
         spectrogram = random.choice(spectrogram_batch.detach().cpu()).squeeze(0)
         image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram))
         self.writer.add_image(name, ToTensor()(image))
+
+    def _log_triplet_audio(self, batch):
+        ind = random.randint(0, batch["audio"].shape[0] - 1)
+        self.writer.add_audio("noisy", batch["audio"][ind].cpu(), self.config["preprocessing"]["sr"])
+        self.writer.add_audio("generated", batch["gen_audio"][ind].cpu(), self.config["preprocessing"]["sr"])
+        self.writer.add_audio("target", batch["target_audio"][ind].cpu(), self.config["preprocessing"]["sr"])
 
     def _log_audio(self, audio_batch, name="audio"):
         audio = random.choice(audio_batch.detach().cpu())

@@ -9,12 +9,12 @@ class GeneratorLoss(nn.Module):
         self.mel_lambda = mel_lambda
         self.fm_lambda = fm_lambda
 
-    def forward(self, gen_discriminator_out, mel, gen_mel, real_feature_map, gen_feature_map, **batch):
+    def forward(self, gen_discriminator_out, target_mel, gen_mel, real_feature_map, gen_feature_map, **batch):
         adv_loss = 0.0
         for d_out in gen_discriminator_out:
             adv_loss += torch.mean((1 - d_out) ** 2)
 
-        mel_loss = self.l1_loss(mel, gen_mel)
+        mel_loss = self.l1_loss(target_mel, gen_mel)
 
         feature_loss = 0.0
         for real, gen in zip(real_feature_map, gen_feature_map):
