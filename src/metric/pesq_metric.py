@@ -9,11 +9,11 @@ class PESQMetric(BaseMetric):
         super().__init__(*args, **kwargs)
         self.pesq = PerceptualEvaluationSpeechQuality(fs, mode)
 
-    def __call__(self, signal: Tensor, target: Tensor, **kwargs):
-        signal = signal.cpu().detach()
-        target = target.cpu().detach()
+    def __call__(self, generator_audio: Tensor, target_audio: Tensor, **kwargs):
+        generator_audio = generator_audio.cpu().detach()
+        target_audio = target_audio.cpu().detach()
         try:
-            return self.pesq(signal, target)
+            return self.pesq(generator_audio, target_audio)
         except:
             return -0.5
 
