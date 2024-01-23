@@ -16,21 +16,20 @@ class SpectralMaskNet(nn.Module):
 
 
     def forward(self, x, spectral_out=None):
-        print("stft", x.shape, spectral_out.shape)
         magnitude, phase = stft(x, self.n_fft)
         mag = magnitude.unsqueeze(1)
-        print("mag", mag.shape)
+
         if spectral_out is not None:
             spectral_out = self.reflection(spectral_out)
             spectral_out = self.spec_conv(spectral_out)
             mag = torch.cat([mag, spectral_out.unsqueeze(1)], dim=1)
-        print("magnitude", x.shape, spectral_out.shape, mag.shape)
-        # mag = magnitude if spectral_out is None else
 
         mul_factor = F.softplus(self.spectral(mag))
+        mul_factor = mul_factor.squeeze(1)
         magnitude = magnitude * mul_factor
-
+        magnitude = magnitude.squeeze(1)
         out = istft(magnitude, phase, self.n_fft)
+        out = out.unsqueeze(1)
         return out
 
 
@@ -48,7 +47,6 @@ class SpectralUNet(nn.Module):
         skips = []
         out = self.prolog(x)
         for block in self.downsample:
-            print(out.shape)
             out, skip = block(out)
             skips.append(skip)
 
@@ -72,7 +70,7 @@ class UpsampleBlock(nn.Module):
     def forward(self, x, skip):
         x = self.prolog(x)
         x = self.blocks(x)
-        # x, skip = fix_shapes_2d(x, skip, mode='pad')
+        x, skip = fix_shapes_2d(x, skip, mode='pad')
         x = self.epilog(torch.cat([x, skip], dim=1))
         return x
 

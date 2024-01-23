@@ -20,7 +20,7 @@ class Generator(BaseModel):
         spec_out = spec_out.squeeze(1)
         gen_out = self.generator(spec_out)
         if audio is not None:
-            gen_out = torch.cat([gen_out, audio], dim=1)
+            gen_out = torch.cat([gen_out, audio[..., :gen_out.shape[-1]]], dim=1)
 
         wave_out = self.wave_unet(gen_out).squeeze(1)
         if self.mode == 'vocoder':
