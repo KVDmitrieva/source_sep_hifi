@@ -178,9 +178,9 @@
       "num_workers": 0,
       "datasets": [
         {
-          "type": "LJspeechDataset",
+          "type": "VCTKDataset",
           "args": {
-            "part": "train",
+            "part": "testset",
             "limit": 64
           }
         }
@@ -191,9 +191,9 @@
       "num_workers": 0,
       "datasets": [
         {
-          "type": "LJspeechDataset",
+          "type": "VCTKDataset",
           "args": {
-            "part": "train",
+            "part": "testset",
             "limit": 64
           }
         }
