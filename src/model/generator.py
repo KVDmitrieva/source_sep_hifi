@@ -27,3 +27,17 @@ class Generator(BaseModel):
             return self.spec_mask(wave_out, spec_out)
 
         return self.spec_mask(wave_out)
+
+
+class WaveGenerator(BaseModel):
+    def __init__(self, generator_params, wave_unet_params):
+        super().__init__()
+        self.generator = HiFiGenerator(**generator_params)
+        self.wave_unet = WaveUNet(**wave_unet_params)
+
+    def forward(self, mel, audio=None, **batch):
+        gen_out = self.generator(mel)
+        if audio is not None:
+            gen_out = torch.cat([gen_out, audio[..., :gen_out.shape[-1]]], dim=1)
+
+        return self.wave_unet(gen_out)
