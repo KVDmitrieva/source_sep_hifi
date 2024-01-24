@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.model.utils import fix_shapes_2d, stft, istft
+from src.model.utils import fix_shapes_2d
 
 
 class SpectralMaskNet(nn.Module):
@@ -14,21 +14,19 @@ class SpectralMaskNet(nn.Module):
         self.spec_conv = nn.Conv1d(80, 513, 1)
         self.reflection = nn.ReflectionPad1d((1, 0))
 
-
     def forward(self, x, spectral_out=None):
-        magnitude, phase = stft(x, self.n_fft)
-        mag = magnitude.unsqueeze(1)
+        window = torch.hann_window(self.n_fft).to(x.device)
+        spectrum = torch.stft(x, n_fft=self.n_fft, window=window, return_complex=False)
+        magnitude = torch.sqrt((spectrum ** 2).sum(-1) + 1e-9).unsqueeze(1)
 
         if spectral_out is not None:
             spectral_out = self.reflection(spectral_out)
             spectral_out = self.spec_conv(spectral_out)
-            mag = torch.cat([mag, spectral_out.unsqueeze(1)], dim=1)
+            magnitude = torch.cat([magnitude, spectral_out.unsqueeze(1)], dim=1)
 
-        mul_factor = F.softplus(self.spectral(mag))
-        mul_factor = mul_factor.squeeze(1)
-        magnitude = magnitude * mul_factor
-        magnitude = magnitude.squeeze(1)
-        out = istft(magnitude, phase, self.n_fft)
+        mul_factor = F.softplus(self.spectral(magnitude)).squeeze(1)
+        spectrum = mul_factor.unsqueeze(-1) * spectrum
+        out = torch.istft(torch.view_as_complex(spectrum), n_fft=self.n_fft, window=window)
         out = out.unsqueeze(1)
         return out
 
