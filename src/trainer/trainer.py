@@ -235,7 +235,7 @@ class Trainer(BaseTrainer):
     def _log_triplet_spectrogram(self, batch):
         ind = random.randint(0, batch["mel"].shape[0] - 1)
         for name, spectrogram in zip(["noisy", "generated", "target"],  ["mel", "gen_mel", "target_mel"]):
-            image = PIL.Image.open(plot_spectrogram_to_buf(batch[spectrogram][ind].cpu()))
+            image = PIL.Image.open(plot_spectrogram_to_buf(batch[spectrogram][ind].detach().cpu()))
             self.writer.add_image(name, ToTensor()(image))
 
     def _log_triplet_audio(self, batch):
