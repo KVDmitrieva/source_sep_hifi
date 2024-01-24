@@ -118,8 +118,8 @@ class Trainer(BaseTrainer):
                     "dis learning rate", self.dis_lr_scheduler.get_last_lr()[0]
                 )
 
-                self._log_triplet_audio(batch)
-                self._log_triplet_spectrogram(batch)
+                # self._log_triplet_audio(batch)
+                # self._log_triplet_spectrogram(batch)
                 self._log_scalars(self.train_metrics)
                 # we don't want to reset train metrics at the start of every epoch
                 # because we are interested in recent train metrics

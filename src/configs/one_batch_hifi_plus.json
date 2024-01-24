@@ -1,8 +1,8 @@
 {
-  "name": "one_batch_plus_enhancment",
+  "name": "one_batch_plus_enhancement",
   "n_gpu": 1,
   "preprocessing": {
-    "sr": 22050,
+    "sr": 16000,
     "spectrogram": {
       "type": "MelSpectrogram",
       "args": {
@@ -275,9 +275,10 @@
     "save_dir": "saved/",
     "save_period": 500,
     "verbosity": 2,
+    "log_media": 5,
     "monitor": "min val_loss",
     "early_stop": 100,
     "visualize": "wandb",
-    "wandb_project": "source_sep"
+    "wandb_project": "hifi_plusplus"
   }
 }
