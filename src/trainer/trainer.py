@@ -234,15 +234,15 @@ class Trainer(BaseTrainer):
 
     def _log_triplet_spectrogram(self, batch):
         ind = random.randint(0, batch["mel"].shape[0] - 1)
-        for name, spectrogram in zip(["noisy", "generated", "target"],  ["mel", "gen_mel", "target_mel"]):
+        for name, spectrogram in zip(["noisy_mel", "generated_mel", "target_mel"],  ["mel", "gen_mel", "target_mel"]):
             image = PIL.Image.open(plot_spectrogram_to_buf(batch[spectrogram][ind].detach().cpu()))
             self.writer.add_image(name, ToTensor()(image))
 
     def _log_triplet_audio(self, batch):
         ind = random.randint(0, batch["audio"].shape[0] - 1)
-        self.writer.add_audio("noisy", batch["audio"][ind].cpu(), self.config["preprocessing"]["sr"])
-        self.writer.add_audio("generated", batch["generator_audio"][ind].cpu(), self.config["preprocessing"]["sr"])
-        self.writer.add_audio("target", batch["target_audio"][ind].cpu(), self.config["preprocessing"]["sr"])
+        self.writer.add_audio("noisy_audio", batch["audio"][ind].detach().cpu(), self.config["preprocessing"]["sr"])
+        self.writer.add_audio("generated_audio", batch["generator_audio"][ind].detach().cpu(), self.config["preprocessing"]["sr"])
+        self.writer.add_audio("target_audio", batch["target_audio"][ind].detach().detach().cpu(), self.config["preprocessing"]["sr"])
 
     def _log_audio(self, audio_batch, name="audio"):
         audio = random.choice(audio_batch.detach().cpu())
