@@ -2,7 +2,7 @@
   "name": "HiFi++",
   "n_gpu": 1,
   "preprocessing": {
-    "sr": 22050,
+    "sr": 16000,
     "spectrogram": {
       "type": "MelSpectrogram",
       "args": {
@@ -17,88 +17,103 @@
   "generator": {
     "type": "Generator",
     "args": {
+      "mode": "enhancement",
       "spectral_unet_params": {
-        "in_channels": 80,
+        "in_channels": 1,
         "out_channels": 1,
-        "width": [10, 20, 40],
-        "scale": 4,
-        "bottleneck_width": 80
+        "width": [
+          8,
+          16,
+          32
+        ],
+        "scale": 2,
+        "bottleneck_width": 64
       },
       "generator_params": {
         "prolog_params": {
-        "in_channels": 80,
-        "out_channels": 512,
-        "kernel_size": 7,
-        "padding": "same"
-      },
-      "upsampler_blocks_params": [
-        {
-          "upsampler_params": {
-            "in_channels": 512,
-            "out_channels": 256,
-            "kernel_size": 16,
-            "stride": 8,
-            "padding": 4
-          }
+          "in_channels": 80,
+          "out_channels": 128,
+          "kernel_size": 7,
+          "padding": "same"
         },
-        {
-          "upsampler_params":  {
-            "in_channels": 256,
-            "out_channels": 128,
-            "kernel_size": 16,
-            "stride": 8,
-            "padding": 4
+        "upsampler_blocks_params": [
+          {
+            "upsampler_params": {
+              "in_channels": 128,
+              "out_channels": 64,
+              "kernel_size": 16,
+              "stride": 8,
+              "padding": 4
+            }
+          },
+          {
+            "upsampler_params": {
+              "in_channels": 64,
+              "out_channels": 32,
+              "kernel_size": 16,
+              "stride": 8,
+              "padding": 4
+            }
+          },
+          {
+            "upsampler_params": {
+              "in_channels": 32,
+              "out_channels": 16,
+              "kernel_size": 4,
+              "stride": 2,
+              "padding": 1
+            }
+          },
+          {
+            "upsampler_params": {
+              "in_channels": 16,
+              "out_channels": 8,
+              "kernel_size": 4,
+              "stride": 2,
+              "padding": 1
+            }
           }
-        },
-        {
-          "upsampler_params":  {
-            "in_channels": 128,
-            "out_channels": 64,
-            "kernel_size": 4,
-            "stride": 2,
-            "padding": 1
-          }
-        },
-        {
-          "upsampler_params": {
-            "in_channels": 64,
-            "out_channels": 32,
-            "kernel_size": 4,
-            "stride": 2,
-            "padding": 1
-          }
+        ],
+        "epilog_params": {
+          "in_channels": 8,
+          "out_channels": 1,
+          "kernel_size": 7,
+          "padding": "same"
         }
-      ],
-      "epilog_params": {
-        "in_channels": 32,
-        "out_channels": 1,
-        "kernel_size": 7,
-        "padding": "same"
-      }
-    }
       },
       "wave_unet_params": {
-        "in_channels": 1,
+        "in_channels": 2,
         "out_channels": 1,
-        "width": [10, 20, 40],
+        "width": [
+          10,
+          20,
+          40
+        ],
         "scale": 4,
         "bottleneck_width": 80
       },
       "spectral_mask_params": {
         "n_fft": 1024,
         "spectral_params": {
-          "in_channels": 2,
+          "in_channels": 1,
           "out_channels": 1,
-          "width": [10, 20, 40],
-          "scale": 4,
-          "bottleneck_width": 80
+          "width": [
+            6,
+            12,
+            24
+          ],
+          "scale": 2,
+          "bottleneck_width": 48
         }
       }
+    }
   },
   "discriminator": {
     "type": "Discriminator",
     "args": {
       "pooling_params": [1, 2, 4],
+      "periods": [],
+      "pd_params": {},
       "sd_params": {
         "prolog_params": {
           "in_channels": 1,
@@ -158,27 +173,28 @@
       }
     }
   },
-  "data": {
+   "data": {
     "train": {
-      "batch_size": 26,
+      "batch_size": 32,
       "num_workers": 0,
       "datasets": [
         {
-          "type": "LJspeechDataset",
+          "type": "VCTKDataset",
           "args": {
-            "part": "train"
+            "part": "trainset_28spk",
+            "max_audio_length": 8192
           }
         }
       ]
     },
     "val": {
-      "batch_size": 26,
+      "batch_size": 32,
       "num_workers": 0,
       "datasets": [
         {
-          "type": "LJspeechDataset",
+          "type": "VCTKDataset",
           "args": {
-            "part": "test"
+            "part": "testset"
           }
         }
       ]
@@ -209,7 +225,38 @@
     "type": "DiscriminatorLoss",
     "args": {}
   },
-  "metrics": [],
+  "metrics": [
+    {
+      "type": "SISDRMetric",
+      "args": {
+        "name": "SI-SDR"
+      }
+    },
+    {
+      "type": "SDRMetric",
+      "args": {
+        "name": "SDR"
+      }
+    },
+    {
+      "type": "PESQMetric",
+      "args": {
+        "name": "PESQ"
+      }
+    },
+        {
+      "type": "STOIMetric",
+      "args": {
+        "name": "STOI"
+      }
+    },
+    {
+      "type": "WMOSMetric",
+      "args": {
+        "name": "WMOS"
+      }
+    }
+  ],
   "gen_lr_scheduler": {
     "type": "ExponentialLR",
     "args": {
@@ -230,7 +277,6 @@
     "monitor": "min val_loss",
     "early_stop": 100,
     "visualize": "wandb",
-    "wandb_project": "source_sep",
-    "len_epoch": 150
+    "wandb_project": "hifi_plusplus"
   }
 }

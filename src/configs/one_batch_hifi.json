@@ -186,6 +186,7 @@
           "type": "VCTKDataset",
           "args": {
             "part": "testset",
+            "max_audio_length": 8192,
             "limit": 32
           }
         }
