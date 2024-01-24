@@ -15,3 +15,5 @@ wandb
 pesq
 pystoi
 pillow
+
+git+https://github.com/AndreevP/wvmos

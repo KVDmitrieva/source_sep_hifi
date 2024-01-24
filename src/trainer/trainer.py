@@ -33,7 +33,8 @@ class Trainer(BaseTrainer):
             self.train_dataloader = inf_loop(self.train_dataloader)
             self.len_epoch = len_epoch
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items() if k != "train"}
-        self.log_step = 50
+        self.log_step = config["trainer"].get("log_step", 50)
+        self.log_media = config["trainer"].get("log_media", 1)
         self.train_metrics = MetricTracker(
             "discriminator_loss", "generator_loss", "adv_loss", "mel_loss", "feature_loss",
             "gen grad norm", "dis grad norm", *[m.name for m in self.metrics], writer=self.writer
@@ -83,15 +84,9 @@ class Trainer(BaseTrainer):
         self.discriminator.train()
         self.train_metrics.reset()
         self.writer.add_scalar("epoch", epoch)
-        for batch_idx, batch in enumerate(
-                tqdm(self.train_dataloader, desc="train", total=self.len_epoch)
-        ):
+        for batch_idx, batch in enumerate(tqdm(self.train_dataloader, desc="train", total=self.len_epoch)):
             try:
-                batch = self.process_batch(
-                    batch,
-                    is_train=True,
-                    metrics=self.train_metrics,
-                )
+                batch = self.process_batch(batch, is_train=True, metrics=self.train_metrics)
             except RuntimeError as e:
                 if "out of memory" in str(e) and self.skip_oom:
                     self.logger.warning("OOM on batch. Skipping batch.")
@@ -107,6 +102,7 @@ class Trainer(BaseTrainer):
                     raise e
             self.train_metrics.update("gen grad norm", self.get_grad_norm())
             self.train_metrics.update("dis grad norm", self.get_grad_norm(model_type="dis"))
+
             if batch_idx % self.log_step == 0:
                 self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
                 self.logger.debug(
@@ -139,9 +135,13 @@ class Trainer(BaseTrainer):
         if self.gen_lr_scheduler is not None:
             self.gen_lr_scheduler.step()
 
-        for part, dataloader in self.evaluation_dataloaders.items():
-            val_log = self._evaluation_epoch(epoch, part, dataloader)
-            log.update(**{f"{part}_{name}": value for name, value in val_log.items()})
+        if epoch % self.log_media == 0:
+            self._log_triplet_audio(batch)
+            self._log_triplet_spectrogram(batch)
+
+            for part, dataloader in self.evaluation_dataloaders.items():
+                val_log = self._evaluation_epoch(epoch, part, dataloader)
+                log.update(**{f"{part}_{name}": value for name, value in val_log.items()})
 
         return log
 
@@ -203,16 +203,8 @@ class Trainer(BaseTrainer):
         self.discriminator.eval()
         self.evaluation_metrics.reset()
         with torch.no_grad():
-            for batch_idx, batch in tqdm(
-                    enumerate(dataloader),
-                    desc=part,
-                    total=len(dataloader),
-            ):
-                batch = self.process_batch(
-                    batch,
-                    is_train=False,
-                    metrics=self.evaluation_metrics,
-                )
+            for batch_idx, batch in tqdm(enumerate(dataloader), desc=part, total=len(dataloader)):
+                batch = self.process_batch(batch, is_train=False, metrics=self.evaluation_metrics)
             self.writer.set_step(epoch * self.len_epoch, part)
             self._log_scalars(self.evaluation_metrics)
             self._log_triplet_audio(batch)

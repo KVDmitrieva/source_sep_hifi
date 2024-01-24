@@ -245,10 +245,16 @@
         "name": "PESQ"
       }
     },
-        {
+    {
       "type": "STOIMetric",
       "args": {
         "name": "STOI"
+      }
+    },
+    {
+      "type": "WMOSMetric",
+      "args": {
+        "name": "WMOS"
       }
     }
   ],
