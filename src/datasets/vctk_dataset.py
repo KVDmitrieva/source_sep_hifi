@@ -53,7 +53,7 @@ class VCTKDataset(BaseDataset):
         noisy_audio = self.load_audio(data_dict["noisy_path"])
         clean_audio = self.load_audio(data_dict["clean_path"])
 
-        if noisy_audio.shape[-1] > self.max_len:
+        if self.max_len is not None and noisy_audio.shape[-1] > self.max_len:
             ind = random.randint(0, noisy_audio.shape[-1] - self.max_len)
             noisy_audio = noisy_audio[:, ind:ind + self.max_len]
             clean_audio = clean_audio[:, ind:ind + self.max_len]

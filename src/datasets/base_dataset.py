@@ -21,7 +21,7 @@ class BaseDataset(Dataset):
             wave_augs=None,
             spec_augs=None,
             limit=None,
-            max_audio_length=8192
+            max_audio_length=None
     ):
         self.config_parser = config_parser
         self.wave_augs = wave_augs
