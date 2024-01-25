@@ -289,7 +289,7 @@
     "log_media": 5,
     "monitor": "min val_loss",
     "early_stop": 100,
-    "len_epoch": 32,
+    "len_epoch": 2,
     "visualize": "wandb",
     "wandb_project": "hifi_plusplus"
   }
