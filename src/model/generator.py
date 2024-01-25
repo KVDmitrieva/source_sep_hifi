@@ -9,9 +9,9 @@ from src.model.utils import fix_shapes_1d
 
 class Generator(BaseModel):
     def __init__(self, generator_params, spectral_unet_params=None, wave_unet_params=None,
-                 spectral_mask_params=None, mode='vocoder', concat_audio=True):
+                 spectral_mask_params=None, add_spectral=False, concat_audio=True):
         super().__init__()
-        self.mode = mode
+        self.add_spectral = add_spectral
         self.concat_audio = concat_audio
 
         self.spec_unet = torch.nn.Identity() if spectral_unet_params is None else SpectralUNet(**spectral_unet_params)
@@ -28,7 +28,7 @@ class Generator(BaseModel):
             gen_out = torch.cat([gen_out, fix_shapes_1d(gen_out, audio)], dim=1)
 
         wave_out = self.wave_unet(gen_out).squeeze(1)
-        if self.mode == 'vocoder':
+        if self.add_spectral:
             return self.spec_mask(wave_out, spec_out)
 
         return self.spec_mask(wave_out)
