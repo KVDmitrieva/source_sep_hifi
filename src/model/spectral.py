@@ -27,7 +27,6 @@ class SpectralMaskNet(nn.Module):
         mul_factor = F.softplus(self.spectral(magnitude)).squeeze(1)
         spectrum = mul_factor.unsqueeze(-1) * spectrum
         out = torch.istft(torch.view_as_complex(spectrum), n_fft=self.n_fft, window=window)
-        out = out.unsqueeze(1)
         return out
 
 

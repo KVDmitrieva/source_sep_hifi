@@ -18,7 +18,7 @@
     "type": "Generator",
     "args": {
       "concat_audio": false,
-      "generator": {
+      "generator_params": {
         "prolog_params": {
           "in_channels": 80,
           "out_channels": 512,
