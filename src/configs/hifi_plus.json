@@ -196,7 +196,8 @@
           "type": "VCTKDataset",
           "args": {
             "part": "testset",
-            "data_dir": "/kaggle/input/vctk-data"
+            "data_dir": "/kaggle/input/vctk-data",
+            "max_audio_length": 8192
           }
         }
       ]
