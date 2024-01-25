@@ -4,23 +4,28 @@ from src.model.base_model import BaseModel
 from src.model.hifi_generator import HiFiGenerator
 from src.model.spectral import SpectralUNet, SpectralMaskNet
 from src.model.wave import WaveUNet
+from src.model.utils import fix_shapes_1d
 
 
 class Generator(BaseModel):
-    def __init__(self, spectral_unet_params, generator_params, wave_unet_params, spectral_mask_params, mode='vocoder'):
+    def __init__(self, generator_params, spectral_unet_params=None, wave_unet_params=None,
+                 spectral_mask_params=None, mode='vocoder', concat_audio=True):
         super().__init__()
-        self.spec_unet = SpectralUNet(**spectral_unet_params)
-        self.generator = HiFiGenerator(**generator_params)
-        self.wave_unet = WaveUNet(**wave_unet_params)
-        self.spec_mask = SpectralMaskNet(**spectral_mask_params)
         self.mode = mode
+        self.concat_audio = concat_audio
+
+        self.spec_unet = torch.nn.Identity() if spectral_unet_params is None else SpectralUNet(**spectral_unet_params)
+        self.generator = HiFiGenerator(**generator_params)
+        self.wave_unet = torch.nn.Identity() if wave_unet_params is None else WaveUNet(**wave_unet_params)
+        self.spec_mask = torch.nn.Identity() if spectral_mask_params is None else SpectralMaskNet(**spectral_mask_params)
 
     def forward(self, mel, audio=None, **batch):
         spec_out = self.spec_unet(mel.unsqueeze(1))
         spec_out = spec_out.squeeze(1)
         gen_out = self.generator(spec_out)
-        if audio is not None:
-            gen_out = torch.cat([gen_out, audio[..., :gen_out.shape[-1]]], dim=1)
+
+        if audio is not None and self.concat_audio:
+            gen_out = torch.cat([gen_out, fix_shapes_1d(gen_out, audio)], dim=1)
 
         wave_out = self.wave_unet(gen_out).squeeze(1)
         if self.mode == 'vocoder':
@@ -28,16 +33,3 @@ class Generator(BaseModel):
 
         return self.spec_mask(wave_out)
 
-
-class WaveGenerator(BaseModel):
-    def __init__(self, generator_params, wave_unet_params):
-        super().__init__()
-        self.generator = HiFiGenerator(**generator_params)
-        self.wave_unet = WaveUNet(**wave_unet_params)
-
-    def forward(self, mel, audio=None, **batch):
-        gen_out = self.generator(mel)
-        if audio is not None:
-            gen_out = torch.cat([gen_out, audio[..., :gen_out.shape[-1]]], dim=1)
-
-        return self.wave_unet(gen_out)

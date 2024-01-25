@@ -12,9 +12,9 @@ def fix_shapes_1d(x, skip, mode='crop'):
 
     diff = skip.shape[-1] - x.shape[-1]
     if mode == 'crop':
-        assert diff % 2 == 0
-        diff = diff // 2
-        return x, skip[..., diff:-diff]
+        diff1 = (diff + 1) // 2
+        diff2 = diff // 2
+        return x, skip[..., diff2:-diff1]
 
     return F.pad(x, (0, diff)), skip
 
