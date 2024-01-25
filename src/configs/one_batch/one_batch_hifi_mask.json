@@ -1,5 +1,5 @@
 {
-  "name": "one_batch_plus_enhancement",
+  "name": "one_batch_full_hifi_plus",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 16000,
@@ -15,8 +15,19 @@
     "spectrogram": []
   },
   "generator": {
-    "type": "WaveGenerator",
+    "type": "Generator",
     "args": {
+      "spectral_unet_params": {
+        "in_channels": 1,
+        "out_channels": 1,
+        "width": [
+          8,
+          16,
+          32
+        ],
+        "scale": 2,
+        "bottleneck_width": 64
+      },
       "generator_params": {
         "prolog_params": {
           "in_channels": 80,
@@ -79,6 +90,20 @@
         ],
         "scale": 4,
         "bottleneck_width": 80
+      },
+      "spectral_mask_params": {
+        "n_fft": 1024,
+        "spectral_params": {
+          "in_channels": 1,
+          "out_channels": 1,
+          "width": [
+            6,
+            12,
+            24
+          ],
+          "scale": 2,
+          "bottleneck_width": 48
+        }
       }
     }
   },
@@ -170,6 +195,7 @@
           "type": "VCTKDataset",
           "args": {
             "part": "testset",
+            "max_audio_length": 8192,
             "limit": 32
           }
         }

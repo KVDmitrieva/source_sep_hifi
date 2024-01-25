@@ -1,5 +1,5 @@
 {
-  "name": "one_batch_plus_enhancement",
+  "name": "one_batch_hifi_vanila",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 16000,
@@ -17,48 +17,37 @@
   "generator": {
     "type": "Generator",
     "args": {
-      "mode": "enhancement",
-      "spectral_unet_params": {
-        "in_channels": 1,
-        "out_channels": 1,
-        "width": [
-          8,
-          16,
-          32
-        ],
-        "scale": 2,
-        "bottleneck_width": 64
-      },
-      "generator_params": {
+      "concat_audio": false,
+      "generator": {
         "prolog_params": {
           "in_channels": 80,
-          "out_channels": 128,
+          "out_channels": 512,
           "kernel_size": 7,
           "padding": "same"
         },
         "upsampler_blocks_params": [
           {
             "upsampler_params": {
+              "in_channels": 512,
+              "out_channels": 256,
+              "kernel_size": 16,
+              "stride": 8,
+              "padding": 4
+            }
+          },
+          {
+            "upsampler_params": {
+              "in_channels": 256,
+              "out_channels": 128,
+              "kernel_size": 16,
+              "stride": 8,
+              "padding": 4
+            }
+          },
+          {
+            "upsampler_params": {
               "in_channels": 128,
               "out_channels": 64,
-              "kernel_size": 16,
-              "stride": 8,
-              "padding": 4
-            }
-          },
-          {
-            "upsampler_params": {
-              "in_channels": 64,
-              "out_channels": 32,
-              "kernel_size": 16,
-              "stride": 8,
-              "padding": 4
-            }
-          },
-          {
-            "upsampler_params": {
-              "in_channels": 32,
-              "out_channels": 16,
               "kernel_size": 4,
               "stride": 2,
               "padding": 1
@@ -66,8 +55,8 @@
           },
           {
             "upsampler_params": {
-              "in_channels": 16,
-              "out_channels": 8,
+              "in_channels": 64,
+              "out_channels": 32,
               "kernel_size": 4,
               "stride": 2,
               "padding": 1
@@ -75,35 +64,10 @@
           }
         ],
         "epilog_params": {
-          "in_channels": 8,
+          "in_channels": 32,
           "out_channels": 1,
           "kernel_size": 7,
           "padding": "same"
-        }
-      },
-      "wave_unet_params": {
-        "in_channels": 2,
-        "out_channels": 1,
-        "width": [
-          10,
-          20,
-          40
-        ],
-        "scale": 4,
-        "bottleneck_width": 80
-      },
-      "spectral_mask_params": {
-        "n_fft": 1024,
-        "spectral_params": {
-          "in_channels": 1,
-          "out_channels": 1,
-          "width": [
-            6,
-            12,
-            24
-          ],
-          "scale": 2,
-          "bottleneck_width": 48
         }
       }
     }
@@ -112,8 +76,7 @@
     "type": "Discriminator",
     "args": {
       "pooling_params": [1, 2, 4],
-      "periods": [],
-      "pd_params": {},
+      "periods": [2, 3, 5, 7, 11],
       "sd_params": {
         "prolog_params": {
           "in_channels": 1,
@@ -170,10 +133,54 @@
           "stride": 1,
           "padding": "same"
         }
+      },
+      "pd_params": {
+        "stem_params": [
+          {
+            "in_channels": 1,
+            "out_channels": 64,
+            "kernel_size": [5, 1],
+            "stride": [3, 1],
+            "padding": [2, 0]
+        },
+          {
+            "in_channels": 64,
+            "out_channels": 128,
+            "kernel_size": [5, 1],
+            "stride": [3, 1],
+            "padding": [2, 0]
+        },
+          {
+            "in_channels": 128,
+            "out_channels": 256,
+            "kernel_size": [5, 1],
+            "stride": [3, 1],
+            "padding": [2, 0]
+        },
+          {
+            "in_channels": 256,
+            "out_channels": 512,
+            "kernel_size": [5, 1],
+            "stride": [3, 1],
+            "padding": [2, 0]
+        }
+        ],
+        "poststem_params": {
+          "in_channels": 512,
+          "out_channels": 1024,
+          "kernel_size": [5, 1],
+          "padding": "same"
+        },
+        "epilog_params": {
+          "in_channels": 1024,
+          "out_channels": 1,
+          "kernel_size": [3, 1],
+          "padding": "same"
+        }
       }
     }
   },
-  "data": {
+   "data": {
     "train": {
       "batch_size": 32,
       "num_workers": 0,
@@ -182,6 +189,8 @@
           "type": "VCTKDataset",
           "args": {
             "part": "testset",
+            "data_dir": "/kaggle/input/vctk-data",
+            "max_audio_length": 8192,
             "limit": 32
           }
         }
@@ -195,6 +204,7 @@
           "type": "VCTKDataset",
           "args": {
             "part": "testset",
+            "data_dir": "/kaggle/input/vctk-data",
             "max_audio_length": 8192,
             "limit": 32
           }
@@ -246,7 +256,7 @@
         "name": "PESQ"
       }
     },
-    {
+        {
       "type": "STOIMetric",
       "args": {
         "name": "STOI"
