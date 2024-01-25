@@ -156,7 +156,7 @@
           "type": "VCTKDataset",
           "args": {
             "part": "testset",
-            "max_audio_length": 8192,
+            "max_audio_length": 32768,
             "limit": 32
           }
         }
@@ -170,7 +170,7 @@
           "type": "VCTKDataset",
           "args": {
             "part": "testset",
-            "max_audio_length": 8192,
+            "max_audio_length": 32768,
             "limit": 32
           }
         }

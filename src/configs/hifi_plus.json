@@ -182,7 +182,7 @@
           "args": {
             "part": "trainset_28spk",
             "data_dir": "/kaggle/input/vctk-data",
-            "max_audio_length": 8192
+            "max_audio_length": 32768
           }
         }
       ]
@@ -196,7 +196,7 @@
           "args": {
             "part": "testset",
             "data_dir": "/kaggle/input/vctk-data",
-            "max_audio_length": 8192
+            "max_audio_length": 32768
           }
         }
       ]
