@@ -15,5 +15,4 @@ class PESQMetric(BaseMetric):
         try:
             return self.pesq(generator_audio, target_audio)
         except:
-            return -0.5
-
+            return 1
