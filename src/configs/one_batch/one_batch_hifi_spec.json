@@ -1,5 +1,5 @@
 {
-  "name": "one_batch_full_hifi_plus",
+  "name": "one_batch_hifi_spec",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 16000,
