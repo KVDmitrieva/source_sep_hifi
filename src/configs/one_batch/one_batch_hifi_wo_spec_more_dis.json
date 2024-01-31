@@ -1,5 +1,5 @@
 {
-  "name": "one_batch_hifi_no_spec",
+  "name": "one_batch_hifi_no_spec_more_dis",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 16000,
@@ -163,7 +163,7 @@
   },
   "data": {
     "train": {
-      "batch_size": 32,
+      "batch_size": 16,
       "num_workers": 0,
       "datasets": [
         {
@@ -177,7 +177,7 @@
       ]
     },
     "val": {
-      "batch_size": 32,
+      "batch_size": 16,
       "num_workers": 0,
       "datasets": [
         {
