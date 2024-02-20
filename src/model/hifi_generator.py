@@ -31,7 +31,8 @@ class HiFiGenerator(BaseModel):
 
 
 class UpsamplerBlock(nn.Module):
-    def __init__(self, upsampler_params, res_block_kernels=(3, 7, 11), res_block_dilation=((1, 1), (3, 1), (5, 1))):
+    def __init__(self, upsampler_params, res_block_kernels=(3, 7, 11),
+                 res_block_dilation=((1, 1), (3, 1), (5, 1)), two_d_mrf=False, mrf_channels=1):
         super().__init__()
         self.upsampler = nn.Sequential(
             nn.LeakyReLU(),
@@ -40,7 +41,10 @@ class UpsamplerBlock(nn.Module):
         self.n = len(res_block_kernels)
         res_blocks = []
         for i in range(self.n):
-            res_blocks.append(ResStack(upsampler_params["out_channels"], res_block_kernels[i], res_block_dilation))
+            if two_d_mrf:
+                res_blocks.append(ResStack2d(res_block_kernels[i], res_block_dilation, mrf_channels))
+            else:
+                res_blocks.append(ResStack(upsampler_params["out_channels"], res_block_kernels[i], res_block_dilation))
 
         self.mfr = nn.ModuleList(res_blocks)
 
@@ -72,4 +76,29 @@ class ResStack(nn.Module):
     def forward(self, x):
         for block in self.net:
             x = x + block(x)
+        return x
+
+
+class ResStack2d(nn.Module):
+    def __init__(self, kernel_size, dilation: list, channels_num: int = 1):
+        super().__init__()
+        n = len(dilation)
+        net = []
+        for i in range(n):
+            net.append(nn.Sequential(
+                nn.LeakyReLU(),
+                weight_norm(nn.Conv2d(in_channels=1, out_channels=channels_num,
+                                      kernel_size=kernel_size, dilation=dilation[i][0], padding='same')),
+                nn.LeakyReLU(),
+                weight_norm(nn.Conv2d(in_channels=channels_num, out_channels=1,
+                                      kernel_size=kernel_size, dilation=dilation[i][1], padding='same'))
+            ))
+
+        self.net = nn.ModuleList(net)
+
+    def forward(self, x):
+        x = x.unsqueeze(1)
+        for block in self.net:
+            x = x + block(x)
+        x = x.squeeze(1)
         return x
