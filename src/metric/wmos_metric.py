@@ -13,8 +13,8 @@ class WMOSMetric(BaseMetric):
     def __call__(self, generator_audio: torch.Tensor, **kwargs):
         x = generator_audio.detach()
         x = self.model.processor(x, return_tensors="pt", padding=True, sampling_rate=16000).input_values
-        x = x.squeeze()
-        # x = x.unsqueeze(1)
+        x = x.squeeze(1)
+
         with torch.no_grad():
             res = self.model.forward(x.to(generator_audio.device)).mean()
         return res.cpu().item()
