@@ -2,14 +2,13 @@ import random
 
 import PIL
 import torch
-import torchaudio
 from torch.nn.utils import clip_grad_norm_
 from torchvision.transforms import ToTensor
 from tqdm import tqdm
 
 from src.trainer.base_trainer import BaseTrainer
 from src.logger.utils import plot_spectrogram_to_buf
-from src.utils import inf_loop, MetricTracker, ROOT_PATH
+from src.utils import inf_loop, MetricTracker
 from src.datasets.utils import MelSpectrogram, MelSpectrogramConfig
 
 
@@ -45,16 +44,6 @@ class Trainer(BaseTrainer):
         )
 
         self.mel_spec = MelSpectrogram(MelSpectrogramConfig())
-        self.test_audio = []
-        self.test_mel = []
-        for i in range(3):
-            path = ROOT_PATH / "test_data" / f"audio_{i + 1}.wav"
-            audio_tensor, sr = torchaudio.load(path)
-            audio_tensor = audio_tensor[0:1, :]
-            mel = self.mel_spec(audio_tensor)
-            self.test_audio.append(audio_tensor)
-            self.test_mel.append(mel)
-
         self.mel_spec = self.mel_spec.to(self.device)
 
     @staticmethod
