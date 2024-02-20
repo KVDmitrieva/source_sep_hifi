@@ -2,6 +2,9 @@ import argparse
 import json
 import os
 from pathlib import Path
+from torch.nn.modules.activation import F
+
+from tqdm import tqdm
 
 import torch
 import torchaudio
@@ -19,6 +22,7 @@ DEFAULT_CHECKPOINT_PATH = ROOT_PATH / "default_test_model" / "checkpoint.pth"
 def main(config, out_dir, test_dir, target_dir=None):
     logger = config.get_logger("test")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    target_sr = config["preprocessing"]["sr"]
 
     model = config.init_obj(config["generator"], module_model)
     logger.info(model)
@@ -39,6 +43,7 @@ def main(config, out_dir, test_dir, target_dir=None):
     mel_spec = MelSpectrogram(MelSpectrogramConfig())
 
     files = sorted(os.listdir(test_dir))
+
     test_dir = Path(test_dir)
     out_dir = Path(out_dir)
     results = []
@@ -61,25 +66,32 @@ def main(config, out_dir, test_dir, target_dir=None):
         metric_score["SDR"] = 0.
         metric_score["STOI"] = 0.
 
-    for file in files:
-        path = test_dir / file
+    for f in tqdm(files, desc="Process file"):
+        path = test_dir / f
         audio_tensor, sr = torchaudio.load(path)
-        audio_tensor = audio_tensor[0:1, :].to(device)
+        audio_tensor = audio_tensor[0:1, :]
+        if sr != target_sr:
+            audio_tensor = torchaudio.functional.resample(audio_tensor, sr, target_sr)
         mel = mel_spec(audio_tensor).to(device)
 
-        gen_audio = model(mel, audio_tensor).squeeze(1)
-
-        path = f"{str(out_dir)}/{file}"
+        gen_audio = model(mel, audio_tensor.unsqueeze(0).to(device)).squeeze(1)
+        path = f"{str(out_dir)}/{f}"
         torchaudio.save(path, gen_audio.cpu(), config["preprocessing"]["sr"])
 
         if len(metric.keys()) > 0:
-            result = {"file": file}
+            result = {"file": f}
             if target_dir is not None:
-                path = target_dir / file
+                path = target_dir / f
                 audio_tensor, sr = torchaudio.load(path)
-                audio_tensor = audio_tensor[0:1, :].to(device)
+                audio_tensor = audio_tensor[0:1, :]
+                if sr != target_sr:
+                    audio_tensor = torchaudio.functional.resample(audio_tensor, sr, target_sr)
+
             for m in metric.keys():
-                result[m] = metric[m](gen_audio, audio_tensor)
+                if m == "WMOS":
+                    result[m] = metric[m](gen_audio)
+                else:
+                    result[m] = metric[m](gen_audio, audio_tensor[:, :gen_audio.shape[1]].to(device))
                 metric_score[m] += result[m]
 
             results.append(result)
@@ -88,11 +100,12 @@ def main(config, out_dir, test_dir, target_dir=None):
         metric_score[m] /= len(files)
 
     if len(metric_score) > 0:
-        metric_score["file"] = "mean"
-        results.append(metric_score)
         print("Mean score:")
-        for key, val in results[-1].items():
+        for key, val in metric_score.items():
             print(key, val)
+
+        metric_score["file"] = "Mean score"
+        results.append(metric_score)
 
         with (out_dir / "result.txt").open("w") as f:
             json.dump(results, f, indent=2)
