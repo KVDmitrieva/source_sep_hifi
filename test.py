@@ -10,18 +10,16 @@ import src.model as module_model
 from src.utils import ROOT_PATH
 from src.datasets.utils import MelSpectrogram, MelSpectrogramConfig
 from src.utils.parse_config import ConfigParser
+from src.metric import *
 
 
 DEFAULT_CHECKPOINT_PATH = ROOT_PATH / "default_test_model" / "checkpoint.pth"
 
 
-def main(config, out_dir, test_file):
+def main(config, out_dir, test_dir, target_dir=None):
     logger = config.get_logger("test")
-
-    # define cpu or gpu if possible
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # build model architecture
     model = config.init_obj(config["generator"], module_model)
     logger.info(model)
 
@@ -32,7 +30,6 @@ def main(config, out_dir, test_file):
         model = torch.nn.DataParallel(model)
     model.load_state_dict(state_dict)
 
-    # prepare model for testing
     model = model.to(device)
     model.eval()
 
@@ -41,16 +38,64 @@ def main(config, out_dir, test_file):
 
     mel_spec = MelSpectrogram(MelSpectrogramConfig())
 
-    for i in range(3):
-        path = ROOT_PATH / "test_data" / f"audio_{i + 1}.wav"
+    files = sorted(os.listdir(test_dir))
+    test_dir = Path(test_dir)
+    out_dir = Path(out_dir)
+    results = []
+    metric = {}
+    metric_score = {}
+    if torch.cuda.is_available():
+        metric["WMOS"] = WMOSMetric()
+        metric_score["WMOS"] = 0.
+
+    if target_dir is not None:
+        target_dir = Path(target_dir)
+
+        metric["PESQ"] = PESQMetric()
+        metric["SI-SDR"] = SISDRMetric()
+        metric["SDR"] = SDRMetric()
+        metric["STOI"] = STOIMetric()
+
+        metric_score["PESQ"] = 0.
+        metric_score["SI-SDR"] = 0.
+        metric_score["SDR"] = 0.
+        metric_score["STOI"] = 0.
+
+    for file in files:
+        path = test_dir / file
         audio_tensor, sr = torchaudio.load(path)
-        audio_tensor = audio_tensor[0:1, :]
+        audio_tensor = audio_tensor[0:1, :].to(device)
         mel = mel_spec(audio_tensor).to(device)
 
-        gen_audio = model(mel)["generator_audio"].squeeze(1).cpu()
+        gen_audio = model(mel, audio_tensor).squeeze(1)
 
-        path = f"{str(out_dir)}/gen_audio_{i + 1}.wav"
-        torchaudio.save(path, gen_audio, config["preprocessing"]["sr"])
+        path = f"{str(out_dir)}/{file}"
+        torchaudio.save(path, gen_audio.cpu(), config["preprocessing"]["sr"])
+
+        if len(metric.keys()) > 0:
+            result = {"file": file}
+            if target_dir is not None:
+                path = target_dir / file
+                audio_tensor, sr = torchaudio.load(path)
+                audio_tensor = audio_tensor[0:1, :].to(device)
+            for m in metric.keys():
+                result[m] = metric[m](gen_audio, audio_tensor)
+                metric_score[m] += result[m]
+
+            results.append(result)
+
+    for m in metric_score.keys():
+        metric_score[m] /= len(files)
+
+    if len(metric_score) > 0:
+        metric_score["file"] = "mean"
+        results.append(metric_score)
+        print("Mean score:")
+        for key, val in results[-1].items():
+            print(key, val)
+
+        with (out_dir / "result.txt").open("w") as f:
+            json.dump(results, f, indent=2)
 
 
 if __name__ == "__main__":
@@ -85,10 +130,16 @@ if __name__ == "__main__":
     )
     args.add_argument(
         "-t",
-        "--test",
-        default=ROOT_PATH / "test_data",
+        "--test_dir",
+        default=None,
         type=str,
         help="Path to test audios",
+    )
+    args.add_argument(
+        "--target_dir",
+        default=None,
+        type=str,
+        help="Path to target audios",
     )
 
     args = args.parse_args()
@@ -108,4 +159,4 @@ if __name__ == "__main__":
         with Path(args.config).open() as f:
             config.config.update(json.load(f))
 
-    main(config, args.output, args.test)
+    main(config, args.output, args.test_dir, args.target_dir)
