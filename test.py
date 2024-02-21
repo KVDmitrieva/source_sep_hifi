@@ -39,7 +39,7 @@ def main(config, out_dir, test_dir, target_dir=None):
     if not Path(out_dir).exists():
         Path(out_dir).mkdir(exist_ok=True, parents=True)
 
-    mel_spec = MelSpectrogram(MelSpectrogramConfig(sr=22000))
+    mel_spec = MelSpectrogram(MelSpectrogramConfig())
 
     files = sorted(os.listdir(test_dir))
 
