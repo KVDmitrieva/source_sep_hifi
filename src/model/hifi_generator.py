@@ -34,14 +34,21 @@ class UpsamplerBlock(nn.Module):
     def __init__(self, upsampler_params, res_block_kernels=(3, 7, 11), res_block_dilation=((1, 1), (3, 1), (5, 1)),
                  two_d_mrf=False, mrf_channels=1, noise_before=False, noise_after=False):
         super().__init__()
-        inject_noise_before = NoiseInjection(upsampler_params["in_channels"]) if noise_before else nn.Identity()
-        inject_noise_after = NoiseInjection(upsampler_params["out_channels"]) if noise_after else nn.Identity()
-        self.upsampler = nn.Sequential(
-            inject_noise_before,
-            nn.LeakyReLU(),
-            weight_norm(nn.ConvTranspose1d(**upsampler_params)),
-            inject_noise_after
-        )
+
+        if noise_before or noise_after:
+            inject_noise_before = NoiseInjection(upsampler_params["in_channels"]) if noise_before else nn.Identity()
+            inject_noise_after = NoiseInjection(upsampler_params["out_channels"]) if noise_after else nn.Identity()
+            self.upsampler = nn.Sequential(
+                inject_noise_before,
+                nn.LeakyReLU(),
+                weight_norm(nn.ConvTranspose1d(**upsampler_params)),
+                inject_noise_after
+            )
+        else:
+            self.upsampler = nn.Sequential(
+                nn.LeakyReLU(),
+                weight_norm(nn.ConvTranspose1d(**upsampler_params))
+            )
 
         self.n = len(res_block_kernels)
         res_blocks = []
