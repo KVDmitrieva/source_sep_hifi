@@ -261,7 +261,7 @@
     }
   },
   "trainer": {
-    "epochs": 2000,
+    "epochs": 4000,
     "save_dir": "saved/",
     "save_period": 1000,
     "verbosity": 2,
