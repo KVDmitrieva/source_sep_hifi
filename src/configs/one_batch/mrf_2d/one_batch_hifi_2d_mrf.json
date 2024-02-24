@@ -1,5 +1,5 @@
 {
-  "name": "one_batch_hifi_2d_mrf_noise",
+  "name": "one_batch_hifi_2d_mrf",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 16000,
@@ -33,9 +33,7 @@
               "stride": 8,
               "padding": 4
             },
-            "two_d_mrf": true,
-            "mrf_channels": 2,
-            "noise_before": true
+            "two_d_mrf": true
           },
           {
             "upsampler_params": {
@@ -45,9 +43,7 @@
               "stride": 8,
               "padding": 4
             },
-            "two_d_mrf": true,
-            "mrf_channels": 2,
-            "noise_before": true
+            "two_d_mrf": true
           },
           {
             "upsampler_params": {
@@ -57,9 +53,7 @@
               "stride": 2,
               "padding": 1
             },
-            "two_d_mrf": true,
-            "mrf_channels": 2,
-            "noise_before": true
+            "two_d_mrf": true
           },
           {
             "upsampler_params": {
@@ -69,9 +63,7 @@
               "stride": 2,
               "padding": 1
             },
-            "two_d_mrf": true,
-            "mrf_channels": 2,
-            "noise_before": true
+            "two_d_mrf": true
           }
         ],
         "epilog_params": {

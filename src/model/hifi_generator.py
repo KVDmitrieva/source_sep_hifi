@@ -32,7 +32,7 @@ class HiFiGenerator(BaseModel):
 
 class UpsamplerBlock(nn.Module):
     def __init__(self, upsampler_params, res_block_kernels=(3, 7, 11), res_block_dilation=((1, 1), (3, 1), (5, 1)),
-                 two_d_mrf=False, mrf_channels=1, noise_before=False, noise_after=False):
+                 two_d_mrf=False, mix_mrf=False, mrf_channels=1, noise_before=False, noise_after=False):
         super().__init__()
 
         if noise_before or noise_after:
@@ -53,9 +53,9 @@ class UpsamplerBlock(nn.Module):
         self.n = len(res_block_kernels)
         res_blocks = []
         for i in range(self.n):
-            if two_d_mrf:
+            if two_d_mrf or mix_mrf:
                 res_blocks.append(ResStack2d(res_block_kernels[i], res_block_dilation, mrf_channels))
-            else:
+            if not two_d_mrf:
                 res_blocks.append(ResStack(upsampler_params["out_channels"], res_block_kernels[i], res_block_dilation))
 
         self.mfr = nn.ModuleList(res_blocks)
