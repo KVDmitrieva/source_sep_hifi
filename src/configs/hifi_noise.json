@@ -1,5 +1,5 @@
 {
-  "name": "one_batch_hifi_noise_before",
+  "name": "HiFi++ noise",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 16000,
@@ -265,7 +265,7 @@
     }
   },
   "trainer": {
-    "epochs": 10,
+    "epochs": 20,
     "save_dir": "saved/",
     "save_period": 5,
     "verbosity": 2,
