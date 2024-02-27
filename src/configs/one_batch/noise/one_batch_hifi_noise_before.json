@@ -1,5 +1,5 @@
 {
-  "name": "one_batch_hifi_noise_before",
+  "name": "one_batch_hifi_noise_before_train_test",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 16000,
@@ -173,7 +173,8 @@
         {
           "type": "VCTKDataset",
           "args": {
-            "part": "testset",
+            "part": "trainset_28spk",
+            "data_dir": "/kaggle/input/vctk-data",
             "max_audio_length": 32768,
             "limit": 32
           }
@@ -188,6 +189,7 @@
           "type": "VCTKDataset",
           "args": {
             "part": "testset",
+            "data_dir": "/kaggle/input/vctk-data",
             "max_audio_length": 32768,
             "limit": 32
           }
@@ -265,7 +267,7 @@
     }
   },
   "trainer": {
-    "epochs": 4000,
+    "epochs": 1000,
     "save_dir": "saved/",
     "save_period": 1000,
     "verbosity": 2,
