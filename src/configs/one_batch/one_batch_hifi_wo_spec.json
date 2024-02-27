@@ -1,5 +1,5 @@
 {
-  "name": "one_batch_hifi_no_spec",
+  "name": "one_batch_hifi_no_spec_train_test",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 16000,
@@ -169,7 +169,7 @@
         {
           "type": "VCTKDataset",
           "args": {
-            "part": "testset",
+            "part": "trainset",
             "max_audio_length": 32768,
             "limit": 32
           }
@@ -261,7 +261,7 @@
     }
   },
   "trainer": {
-    "epochs": 4000,
+    "epochs": 1000,
     "save_dir": "saved/",
     "save_period": 1000,
     "verbosity": 2,
