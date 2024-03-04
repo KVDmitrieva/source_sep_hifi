@@ -9,8 +9,8 @@ class FMSMaskNet(nn.Module):
         self.n_fft = n_fft
         self.fms = nn.Sequential(
             FMS(n_fft // 2 + 1),
-            # FMS(n_fft // 2 + 1),
-            # FMS(n_fft // 2 + 1)
+            FMS(n_fft // 2 + 1),
+            FMS(n_fft // 2 + 1)
         )
 
     def forward(self, x):
