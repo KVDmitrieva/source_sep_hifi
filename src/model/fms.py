@@ -9,8 +9,8 @@ class FMSMaskNet(nn.Module):
         self.n_fft = n_fft
         self.fms = nn.Sequential(
             FMS(n_fft // 2 + 1),
-            FMS(n_fft // 2 + 1),
-            FMS(n_fft // 2 + 1)
+            # FMS(n_fft // 2 + 1),
+            # FMS(n_fft // 2 + 1)
         )
 
     def forward(self, x):
@@ -19,7 +19,7 @@ class FMSMaskNet(nn.Module):
         magnitude = torch.sqrt((spectrum ** 2).sum(-1) + 1e-9)
         # mul_factor = F.softplus(self.fms(magnitude))
         # spectrum = mul_factor.unsqueeze(-1) * spectrum
-        spectrum = self.fms(magnitude)
+        spectrum = self.fms(magnitude).unsqueeze(-1) * spectrum
         out = torch.istft(torch.view_as_complex(spectrum), n_fft=self.n_fft, window=window)
         return out
 
