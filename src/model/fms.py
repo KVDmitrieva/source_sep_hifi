@@ -7,7 +7,11 @@ class FMSMaskNet(nn.Module):
     def __init__(self, n_fft):
         super().__init__()
         self.n_fft = n_fft
-        self.fms = FMS(n_fft // 2 + 1)
+        self.fms = nn.Sequential(
+            FMS(n_fft // 2 + 1),
+            FMS(n_fft // 2 + 1),
+            FMS(n_fft // 2 + 1)
+        )
 
     def forward(self, x):
         window = torch.hann_window(self.n_fft).to(x.device)
