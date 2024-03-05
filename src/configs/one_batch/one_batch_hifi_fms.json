@@ -1,5 +1,5 @@
 {
-  "name": "one_batch_hifi_fms",
+  "name": "one_batch_hifi_2d_fms",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 16000,
