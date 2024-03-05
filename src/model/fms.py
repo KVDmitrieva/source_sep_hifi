@@ -12,7 +12,9 @@ class FMSMaskNet(nn.Module):
             FMS(8),
             ResBlock(8, 16),
             FMS(16),
-            ResBlock(16, 1)
+            ResBlock(16, 8),
+            FMS(8),
+            nn.Conv2d(8, 1, 1)
         )
 
     def forward(self, x):
