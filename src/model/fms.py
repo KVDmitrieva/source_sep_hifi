@@ -9,7 +9,9 @@ class FMSMaskNet(nn.Module):
         self.n_fft = n_fft
         self.fms = nn.Sequential(
             ResBlock(1, 8),
+            FMS(8),
             ResBlock(8, 16),
+            FMS(16),
             ResBlock(16, 1)
         )
 
@@ -39,7 +41,7 @@ class FMS(nn.Module):
 
 class ResBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1,
-                 padding='same', pooling_kernel=3, negative_slope=0.3, first_norm=True):
+                 padding='same', negative_slope=0.3, first_norm=True):
         super().__init__()
         self.head = nn.Sequential(
             nn.BatchNorm2d(num_features=in_channels),
@@ -54,11 +56,7 @@ class ResBlock(nn.Module):
             nn.Conv2d(in_channels=out_channels, out_channels=out_channels,
                       kernel_size=kernel_size, stride=stride, padding=padding)
         )
-        self.epilog = nn.Sequential(
-            nn.MaxPool2d(kernel_size=pooling_kernel),
-            FMS(out_channels)
-        )
 
     def forward(self, x):
         x = self.proj(x) + self.net(self.head(x))
-        return self.epilog(x)
+        return x
