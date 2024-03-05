@@ -55,7 +55,7 @@ class ResBlock(nn.Module):
                       kernel_size=kernel_size, stride=stride, padding=padding)
         )
         self.epilog = nn.Sequential(
-            nn.MaxPool1d(kernel_size=pooling_kernel),
+            nn.MaxPool2d(kernel_size=pooling_kernel),
             FMS(out_channels)
         )
 
