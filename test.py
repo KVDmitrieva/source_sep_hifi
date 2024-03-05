@@ -90,7 +90,8 @@ def main(config, out_dir, test_dir, target_dir=None):
                 if m == "WMOS":
                     result[m] = metric[m](gen_audio)
                 else:
-                    result[m] = metric[m](gen_audio, audio_tensor[:, :gen_audio.shape[1]].to(device)).item()
+                    gen_audio = torch.nn.functional.pad(gen_audio, (0, audio_tensor.shape[1] - gen_audio.shape[1]))
+                    result[m] = metric[m](gen_audio, audio_tensor.to(device)).item()
                 metric_score[m] += result[m]
 
             results.append(result)
