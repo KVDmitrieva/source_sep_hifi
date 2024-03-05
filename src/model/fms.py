@@ -32,7 +32,7 @@ class FMS(nn.Module):
 
     def forward(self, x):
         s = self.pooling(x).squeeze(2, 3)
-        s = self.linear(s).unsqueeze(2, 3)
+        s = self.linear(s).unsqueeze(2).unsqueeze(3)
         s = self.activation(s)
         return s * x + s
 
