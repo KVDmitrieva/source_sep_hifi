@@ -1,5 +1,5 @@
 {
-  "name": "one_batch_hifi_no_spec_train_test",
+  "name": "one_batch_hifi_no_spec_depth=2",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 16000,
@@ -91,7 +91,8 @@
             24
           ],
           "scale": 2,
-          "bottleneck_width": 48
+          "bottleneck_width": 48,
+          "block_depth": 2
         }
       }
     }
@@ -169,7 +170,7 @@
         {
           "type": "VCTKDataset",
           "args": {
-            "part": "trainset_28spk",
+            "part": "testset",
             "data_dir": "/kaggle/input/vctk-data",
             "max_audio_length": 32768,
             "limit": 32
