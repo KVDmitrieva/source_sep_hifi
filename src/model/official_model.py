@@ -143,8 +143,8 @@ class HiFiPlusGenerator(BaseModel):
             x += self.spectralmasknet_skip_connect(x_a)
         return x
 
-    def forward(self, x_orig, audio):
-        x = self.apply_spectralunet(x_orig)
+    def forward(self, mel, audio=None, **batch):
+        x = self.apply_spectralunet(mel)
         x = self.hifi(x)
         if self.use_waveunet and self.waveunet_before_spectralmasknet:
             x = self.apply_waveunet(x)
@@ -249,11 +249,11 @@ class A2AHiFiPlusGeneratorV2(HiFiPlusGenerator):
             x += self.waveunet_skip_connect(x_a)
         return x
 
-    def forward(self, x, audio):
+    def forward(self, mel, audio=None, **batch):
         # x_orig = x.clone()
         # x_orig = x_orig[:, :, : x_orig.shape[2] // 1024 * 1024]
         # x = self.get_melspec(x_orig)
-        x = self.apply_spectralunet(x)
+        x = self.apply_spectralunet(mel)
         x = self.hifi(x)
         if self.use_waveunet and self.waveunet_before_spectralmasknet:
             x = self.apply_waveunet_a2a(x, audio)
