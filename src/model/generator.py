@@ -5,7 +5,7 @@ from src.model.hifi_generator import HiFiGenerator
 from src.model.spectral import SpectralUNet, SpectralMaskNet
 from src.model.wave import WaveUNet
 from src.model.fms import FMSMaskNet
-from src.model.utils import fix_shapes_1d
+from src.model.utils import fix_shapes_1d, closest_power_of_two
 
 
 class Generator(BaseModel):
@@ -23,6 +23,8 @@ class Generator(BaseModel):
         self.spec_mask = torch.nn.Identity() if spectral_mask_params is None else mask_module(**spectral_mask_params)
 
     def forward(self, mel, audio=None, **batch):
+        pad_size = closest_power_of_two(mel.shape[-1]) - mel.shape[-1]
+        mel = torch.nn.functional.pad(mel, (0, pad_size))
         spec_out = self.spec_unet(mel.unsqueeze(1))
         spec_out = spec_out.squeeze(1)
         gen_out = self.generator(spec_out)

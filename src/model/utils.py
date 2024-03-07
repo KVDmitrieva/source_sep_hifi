@@ -30,3 +30,8 @@ def fix_shapes_2d(x, skip, mode='crop'):
         return x, skip[..., diff2:-diff2, diff1:-diff1]
 
     return F.pad(x, (0, diff1, 0, diff2)), skip
+
+
+def closest_power_of_two(n):
+    return 1 << (n - 1).bit_length()
+
