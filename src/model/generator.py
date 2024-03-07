@@ -30,7 +30,7 @@ class Generator(BaseModel):
         gen_out = self.generator(spec_out)
 
         if audio is not None and self.concat_audio:
-            gen_out = torch.cat([gen_out, fix_shapes_1d(gen_out, audio)[1]], dim=1)
+            gen_out = torch.cat(fix_shapes_1d(gen_out, audio), dim=1)
 
         wave_out = self.wave_unet(gen_out).squeeze(1)
         if self.add_spectral:

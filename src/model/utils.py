@@ -11,11 +11,10 @@ def fix_shapes_1d(x, skip, mode='crop'):
     assert mode in ['crop', 'pad']
 
     diff = skip.shape[-1] - x.shape[-1]
-    if mode == 'crop' and diff > 0:
-        diff1 = (diff + 1) // 2
-        diff2 = diff // 2
-        return x, skip[..., diff2:-diff1]
-
+    if mode == 'crop' and diff != 0:
+        if diff > 0:
+            return x, skip[..., :-diff]
+        return x[..., :diff], skip
     return F.pad(x, (0, diff)), skip
 
 
