@@ -8,11 +8,11 @@ class FMSMaskNet(nn.Module):
         super().__init__()
         self.n_fft = n_fft
         self.fms = nn.Sequential(
-            ResBlock(1, 8, batch_norm),
+            ResBlock(1, 8, batch_norm=batch_norm),
             FMS(8),
-            ResBlock(8, 16, batch_norm),
+            ResBlock(8, 16, batch_norm=batch_norm),
             FMS(16),
-            ResBlock(16, 8, batch_norm),
+            ResBlock(16, 8, batch_norm=batch_norm),
             FMS(8),
             nn.Conv2d(8, 1, 1)
         )
