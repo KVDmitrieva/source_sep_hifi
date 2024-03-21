@@ -1,5 +1,5 @@
 {
-  "name": "one_batch_hifi_2d_1d_mrf",
+  "name": "one_batch_hifi_2d_1d_mrf_v2",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 16000,
@@ -44,7 +44,7 @@
               "stride": 8,
               "padding": 4
             },
-            "two_d_mrf": true,
+            "two_d_mrf": false,
             "mrf_channels": 2
           },
           {
@@ -55,7 +55,7 @@
               "stride": 2,
               "padding": 1
             },
-            "two_d_mrf": true,
+            "two_d_mrf": false,
             "mrf_channels": 2
           },
           {
