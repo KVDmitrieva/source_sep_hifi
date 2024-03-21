@@ -1,5 +1,5 @@
 {
-  "name": "one_batch_hifi_2d_fms",
+  "name": "one_batch_hifi_2d_fms_rm_norm",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 16000,
@@ -82,7 +82,8 @@
         "bottleneck_width": 80
       },
       "spectral_mask_params": {
-        "n_fft": 1024
+        "n_fft": 1024,
+        "batch_norm": false
       }
     }
   },

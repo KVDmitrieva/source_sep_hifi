@@ -4,15 +4,15 @@ import torch.nn.functional as F
 
 
 class FMSMaskNet(nn.Module):
-    def __init__(self, n_fft):
+    def __init__(self, n_fft, batch_norm=True):
         super().__init__()
         self.n_fft = n_fft
         self.fms = nn.Sequential(
-            ResBlock(1, 8),
+            ResBlock(1, 8, batch_norm),
             FMS(8),
-            ResBlock(8, 16),
+            ResBlock(8, 16, batch_norm),
             FMS(16),
-            ResBlock(16, 8),
+            ResBlock(16, 8, batch_norm),
             FMS(8),
             nn.Conv2d(8, 1, 1)
         )
@@ -43,17 +43,17 @@ class FMS(nn.Module):
 
 class ResBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1,
-                 padding='same', negative_slope=0.3, first_norm=True):
+                 padding='same', negative_slope=0.3, batch_norm=True):
         super().__init__()
         self.head = nn.Sequential(
-            nn.BatchNorm2d(num_features=in_channels),
+            nn.BatchNorm2d(num_features=in_channels) if batch_norm else nn.Identity(),
             nn.LeakyReLU(negative_slope=negative_slope)
-            ) if first_norm else nn.Identity()
+            )
         self.proj = nn.Identity() if in_channels == out_channels else nn.Conv2d(in_channels, out_channels, 1)
         self.net = nn.Sequential(
             nn.Conv2d(in_channels=in_channels, out_channels=out_channels,
                       kernel_size=kernel_size, stride=stride, padding=padding),
-            nn.BatchNorm2d(num_features=out_channels),
+            nn.BatchNorm2d(num_features=out_channels) if batch_norm else nn.Identity(),
             nn.LeakyReLU(negative_slope=negative_slope),
             nn.Conv2d(in_channels=out_channels, out_channels=out_channels,
                       kernel_size=kernel_size, stride=stride, padding=padding)
