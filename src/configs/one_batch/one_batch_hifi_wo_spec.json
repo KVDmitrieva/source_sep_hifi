@@ -1,5 +1,5 @@
 {
-  "name": "one_batch_hifi_no_spec_depth=2",
+  "name": "one_batch_hifi_no_spec_norm",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 16000,
@@ -264,7 +264,7 @@
     }
   },
   "trainer": {
-    "epochs": 1000,
+    "epochs": 2000,
     "save_dir": "saved/",
     "save_period": 1000,
     "verbosity": 2,
