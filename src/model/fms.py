@@ -12,10 +12,6 @@ class FMSMaskNet(nn.Module):
             FMS(8),
             ResBlock(8, 16, batch_norm=batch_norm),
             FMS(16),
-            ResBlock(16, 32, batch_norm=batch_norm),
-            FMS(32),
-            ResBlock(32, 16, batch_norm=batch_norm),
-            FMS(16),
             ResBlock(16, 8, batch_norm=batch_norm),
             FMS(8),
             nn.Conv2d(8, 1, 1)

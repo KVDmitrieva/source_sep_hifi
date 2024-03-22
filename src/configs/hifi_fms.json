@@ -1,0 +1,264 @@
+{
+  "name": "HiFi++ fms",
+  "n_gpu": 1,
+  "preprocessing": {
+    "sr": 16000,
+    "spectrogram": {
+      "type": "MelSpectrogram",
+      "args": {
+      }
+    },
+    "log_spec": true
+  },
+  "augmentations": {
+    "wave": [],
+    "spectrogram": []
+  },
+  "generator": {
+    "type": "Generator",
+    "args": {
+      "use_fms": true,
+      "generator_params": {
+        "prolog_params": {
+          "in_channels": 80,
+          "out_channels": 128,
+          "kernel_size": 7,
+          "padding": "same"
+        },
+        "upsampler_blocks_params": [
+          {
+            "upsampler_params": {
+              "in_channels": 128,
+              "out_channels": 64,
+              "kernel_size": 16,
+              "stride": 8,
+              "padding": 4
+            }
+          },
+          {
+            "upsampler_params": {
+              "in_channels": 64,
+              "out_channels": 32,
+              "kernel_size": 16,
+              "stride": 8,
+              "padding": 4
+            }
+          },
+          {
+            "upsampler_params": {
+              "in_channels": 32,
+              "out_channels": 16,
+              "kernel_size": 4,
+              "stride": 2,
+              "padding": 1
+            }
+          },
+          {
+            "upsampler_params": {
+              "in_channels": 16,
+              "out_channels": 8,
+              "kernel_size": 4,
+              "stride": 2,
+              "padding": 1
+            }
+          }
+        ],
+        "epilog_params": {
+          "in_channels": 8,
+          "out_channels": 1,
+          "kernel_size": 7,
+          "padding": "same"
+        }
+      },
+      "wave_unet_params": {
+        "in_channels": 2,
+        "out_channels": 1,
+        "width": [
+          10,
+          20,
+          40
+        ],
+        "scale": 4,
+        "bottleneck_width": 80
+      },
+      "spectral_mask_params": {
+        "n_fft": 1024,
+        "batch_norm": true
+      }
+    }
+  },
+  "discriminator": {
+    "type": "Discriminator",
+    "args": {
+      "pooling_params": [1, 2, 4],
+      "periods": [],
+      "pd_params": {},
+      "sd_params": {
+        "prolog_params": {
+          "in_channels": 1,
+          "out_channels": 16,
+          "kernel_size": 15,
+          "stride": 1,
+          "padding": "same"
+        },
+        "downsampler_params": [
+          {
+            "in_channels": 16,
+            "out_channels": 64,
+            "kernel_size": 41,
+            "stride": 4,
+            "groups": 4,
+            "padding": 20
+        },
+          {
+            "in_channels": 64,
+            "out_channels": 256,
+            "kernel_size": 41,
+            "stride": 4,
+            "groups": 16,
+            "padding": 20
+        },
+          {
+            "in_channels": 256,
+            "out_channels": 1024,
+            "kernel_size": 41,
+            "stride": 4,
+            "groups": 64,
+            "padding": 20
+        },
+          {
+            "in_channels": 1024,
+            "out_channels": 1024,
+            "kernel_size": 41,
+            "stride": 4,
+            "groups": 256,
+            "padding": 20
+        }
+        ],
+        "post_downsampler_params": {
+          "in_channels": 1024,
+          "out_channels": 1024,
+          "kernel_size": 5,
+          "stride": 1,
+          "padding": "same"
+        },
+        "epilog_params": {
+          "in_channels": 1024,
+          "out_channels": 1,
+          "kernel_size": 3,
+          "stride": 1,
+          "padding": "same"
+        }
+      }
+    }
+  },
+  "data": {
+    "train": {
+      "batch_size": 32,
+      "num_workers": 0,
+      "datasets": [
+        {
+          "type": "VCTKDataset",
+          "args": {
+            "part": "trainset_28spk",
+            "data_dir": "/kaggle/input/vctk-data",
+            "max_audio_length": 32768
+          }
+        }
+      ]
+    },
+    "val": {
+      "batch_size": 32,
+      "num_workers": 0,
+      "datasets": [
+        {
+          "type": "VCTKDataset",
+          "args": {
+            "part": "testset",
+            "data_dir": "/kaggle/input/vctk-data",
+            "max_audio_length": 32768
+          }
+        }
+      ]
+    }
+  },
+  "gen_optimizer": {
+    "type": "AdamW",
+    "args": {
+      "lr": 2e-4,
+      "betas": [0.8, 0.99]
+    }
+  },
+  "dis_optimizer": {
+    "type": "AdamW",
+    "args": {
+      "lr": 2e-4,
+      "betas": [0.8, 0.99]
+    }
+  },
+  "gen_loss": {
+    "type": "GeneratorLoss",
+    "args": {
+      "mel_lambda": 45,
+      "fm_lambda": 2
+    }
+  },
+  "dis_loss": {
+    "type": "DiscriminatorLoss",
+    "args": {}
+  },
+  "metrics": [
+    {
+      "type": "SISDRMetric",
+      "args": {
+        "name": "SI-SDR"
+      }
+    },
+    {
+      "type": "SDRMetric",
+      "args": {
+        "name": "SDR"
+      }
+    },
+    {
+      "type": "PESQMetric",
+      "args": {
+        "name": "PESQ"
+      }
+    },
+    {
+      "type": "STOIMetric",
+      "args": {
+        "name": "STOI"
+      }
+    },
+    {
+      "type": "WMOSMetric",
+      "args": {
+        "name": "WMOS"
+      }
+    }
+  ],
+  "gen_lr_scheduler": {
+    "type": "ExponentialLR",
+    "args": {
+      "gamma": 0.999
+    }
+  },
+  "dis_lr_scheduler": {
+    "type": "ExponentialLR",
+    "args": {
+      "gamma": 0.999
+    }
+  },
+  "trainer": {
+    "epochs": 20,
+    "save_dir": "saved/",
+    "save_period": 5,
+    "verbosity": 2,
+    "monitor": "min val_loss",
+    "early_stop": 100,
+    "visualize": "wandb",
+    "wandb_project": "hifi_plusplus"
+  }
+}
