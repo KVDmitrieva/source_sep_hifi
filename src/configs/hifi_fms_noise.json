@@ -189,7 +189,7 @@
   "gen_optimizer": {
     "type": "AdamW",
     "args": {
-      "lr": 2e-4,
+      "lr": 6e-4,
       "betas": [0.8, 0.99]
     }
   },
