@@ -1,0 +1,37 @@
+defaults:
+  - model: baseline
+  - writer: wandb
+  - metrics: example
+  - datasets: example
+  - dataloader: example
+  - transforms: example
+  - _self_
+gen_optimizer:
+  _target_: torch.optim.AdamW
+  lr: 2e-4
+  betas: [0.8, 0.99]
+dis_optimizer:
+  _target_: torch.optim.AdamW
+  lr: 2e-4
+  betas: [0.8, 0.99]
+gen_lr_scheduler:
+  _target_: torch.optim.lr_scheduler.ExponentialLR
+  gamma: 0.999
+dis_lr_scheduler:
+  _target_: torch.optim.lr_scheduler.ExponentialLR
+  gamma: 0.999
+loss_function:
+  _target_: src.loss.ExampleLoss
+trainer:
+  log_step: 50
+  n_epochs: 100
+  epoch_len: 500
+  device_tensors: ["data_object", "labels"] # which tensors should be on device (ex. GPU)
+  resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
+  device: auto # device name or "auto"
+  override: False # if True, will override the previous run with the same name
+  monitor: "max test_MulticlassAccuracy" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
+  save_period: 5 # checkpoint each save_period epochs in addition to the best epoch
+  early_stop: ${trainer.n_epochs} # epochs for early stopping
+  save_dir: "saved"
+  seed: 1
