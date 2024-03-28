@@ -1,7 +1,7 @@
 defaults:
   - model: baseline
   - writer: wandb
-  - metrics: example
+  - metrics: enhancement
   - datasets: example
   - dataloader: example
   - transforms: example
@@ -20,12 +20,15 @@ gen_lr_scheduler:
 dis_lr_scheduler:
   _target_: torch.optim.lr_scheduler.ExponentialLR
   gamma: 0.999
-loss_function:
-  _target_: src.loss.ExampleLoss
+gen_loss:
+  _target_: src.loss.GeneratorLoss
+  mel_lambda: 45
+  fm_lambda: 2
+dis_loss:
+  _target_: src.loss.DiscriminatorLoss
 trainer:
   log_step: 50
-  n_epochs: 100
-  epoch_len: 500
+  epochs: 2000
   device_tensors: ["data_object", "labels"] # which tensors should be on device (ex. GPU)
   resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"
@@ -34,4 +37,4 @@ trainer:
   save_period: 5 # checkpoint each save_period epochs in addition to the best epoch
   early_stop: ${trainer.n_epochs} # epochs for early stopping
   save_dir: "saved"
-  seed: 1
+  seed: 42

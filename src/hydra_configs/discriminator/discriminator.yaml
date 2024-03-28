@@ -1,0 +1,6 @@
+- _target_: src.model.Discriminator
+  pooling_params: [1, 2, 4]
+  periods: [ ]
+  pd_params: null
+  sd_params: params
+

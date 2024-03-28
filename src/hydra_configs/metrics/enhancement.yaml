@@ -1,0 +1,12 @@
+- _target_: src.metric.SISDRMetric
+  name: "SI-SDR"
+- _target_: src.metric.SDRMetric
+  name: "SDR"
+- _target_: src.metric.PESQMetric
+  name: "PESQ"
+- _target_: src.metric.STOIMetric
+  name: "STOI"
+- _target_: src.metric.WMOSMetric
+  name: "WMOS"
+
+

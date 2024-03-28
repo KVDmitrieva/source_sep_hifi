@@ -1,0 +1,43 @@
+prolog_params:
+  in_channels: 1
+  out_channels: 16
+  kernel_size: 15
+  stride: 1
+  padding: same
+downsampler_params:
+  - in_channels: 16
+    out_channels: 64
+    kernel_size: 41
+    stride: 4
+    groups: 4
+    padding: 20
+  - in_channels: 64
+    out_channels: 256
+    kernel_size: 41
+    stride: 4
+    groups: 16
+    padding: 20
+  - in_channels: 256
+    out_channels: 1024
+    kernel_size: 41
+    stride: 4
+    groups: 64
+    padding: 20
+  - in_channels: 1024
+    out_channels: 1024
+    kernel_size: 41
+    stride: 4
+    groups: 256
+    padding: 20
+post_downsampler_params:
+  in_channels: 1024
+  out_channels: 1024
+  kernel_size: 5
+  stride: 1
+  padding: same
+epilog_params:
+  in_channels: 1024
+  out_channels: 1
+  kernel_size: 3
+  stride: 1
+  padding: same
