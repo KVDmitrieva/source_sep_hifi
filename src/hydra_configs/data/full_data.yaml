@@ -1,0 +1,20 @@
+train:
+  batch_size: 32
+  num_workers: 0
+  datasets:
+    - type: VCTKDataset
+      args:
+        part: trainset_28spk
+        data_dir: /kaggle/input/vctk-data
+        max_audio_length: 32768
+        limit: 32
+val:
+  batch_size: 32
+  num_workers: 0
+  datasets:
+    - type: VCTKDataset
+      args:
+        part: testset
+        data_dir: /kaggle/input/vctk-data
+        max_audio_length: 32768
+        limit: 32

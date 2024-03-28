@@ -1,0 +1,18 @@
+train:
+  batch_size: 32
+  num_workers: 0
+  datasets:
+    - type: VCTKDataset
+      args:
+        part: testset
+        max_audio_length: 32768
+        limit: 32
+val:
+  batch_size: 32
+  num_workers: 0
+  datasets:
+    - type: VCTKDataset
+      args:
+        part: testset
+        max_audio_length: 32768
+        limit: 32
