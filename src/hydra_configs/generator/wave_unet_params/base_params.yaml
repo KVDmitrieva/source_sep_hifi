@@ -1,0 +1,8 @@
+in_channels: 2
+out_channels: 1
+width:
+  - 10
+  - 20
+  - 40
+scale: 4
+bottleneck_width: 80

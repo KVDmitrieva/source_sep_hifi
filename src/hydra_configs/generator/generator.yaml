@@ -1,2 +1,5 @@
 - _target_: src.model.Generator
-
+  spectral_unet_params: base_params
+  generator_params: base_params
+  wave_unet_params: base_params
+  spectral_mask_params: base_params
