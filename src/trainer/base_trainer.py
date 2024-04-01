@@ -31,10 +31,9 @@ class BaseTrainer:
         # for interrupt saving
         self._last_epoch = 0
 
-        cfg_trainer = config["trainer"]
-        self.epochs = cfg_trainer["epochs"]
-        self.save_period = cfg_trainer["save_period"]
-        self.monitor = cfg_trainer.get("monitor", "off")
+        self.epochs = config.trainer.epochs
+        self.save_period = config.trainer.save_period
+        self.monitor = config.trainer.get("monitor", "off")
 
         # configuration to monitor model performance and save best
         if self.monitor == "off":
@@ -45,7 +44,7 @@ class BaseTrainer:
             assert self.mnt_mode in ["min", "max"]
 
             self.mnt_best = inf if self.mnt_mode == "min" else -inf
-            self.early_stop = cfg_trainer.get("early_stop", inf)
+            self.early_stop = config.trainer.get("early_stop", inf)
             if self.early_stop <= 0:
                 self.early_stop = inf
 
@@ -55,7 +54,7 @@ class BaseTrainer:
 
         # setup visualization writer instance
         self.writer = get_visualizer(
-            config, self.logger, cfg_trainer["visualize"]
+            config, self.logger, config.trainer.visualize
         )
 
         if config.resume is not None:

@@ -28,7 +28,7 @@ def write_json(content, fname):
 
 
 def inf_loop(data_loader):
-    """wrapper function for endless data loader."""
+    """wrapper function for endless datasets loader."""
     for loader in repeat(data_loader):
         yield from loader
 

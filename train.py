@@ -1,65 +1,62 @@
-import argparse
-import collections
 import warnings
 
 import numpy as np
 import torch
 
-import src.loss as module_loss
-import src.metric as module_metric
-import src.model as module_arch
+import random
+
+import hydra
+from hydra.utils import instantiate
+
 from src.trainer import Trainer
-from src.utils import prepare_device
-from src.utils.object_loading import get_dataloaders
-from src.utils.parse_config import ConfigParser
+from src.utils.data_utils import get_dataloaders
+from src.utils.init_utils import setup_saving_and_logging
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
-# fix random seeds for reproducibility
-SEED = 123
-torch.manual_seed(SEED)
-torch.backends.cudnn.deterministic = False
-torch.backends.cudnn.benchmark = True
-np.random.seed(SEED)
+
+def set_random_seed(seed):
+    torch.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
+    np.random.seed(seed)
+    random.seed(seed)
 
 
+@hydra.main(version_base=None, config_path="src/hydra_configs", config_name="one_batch_model")
 def main(config):
-    logger = config.get_logger("train")
+    set_random_seed(config.trainer.random_seed)
 
-    # setup data_loader instances
+    logger = setup_saving_and_logging(config)
+
     dataloaders = get_dataloaders(config)
 
-    # build model architecture, then print to console
-    generator = config.init_obj(config["generator"], module_arch)
+    if config.trainer.device == "auto":
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+    else:
+        device = config.trainer.device
+
+    generator = instantiate(config.generator).to(device)
     logger.info(generator)
-    discriminator = config.init_obj(config["discriminator"], module_arch)
+    discriminator = instantiate(config.discriminator).to(device)
     logger.info(discriminator)
 
-    # prepare for (multi-device) GPU training
-    device, device_ids = prepare_device(config["n_gpu"])
-    generator = generator.to(device)
-    discriminator = discriminator.to(device)
-    if len(device_ids) > 1:
+    if torch.cuda.device_count() >= config.trainer.n_gpu > 1:
+        device_ids = list(range(config.trainer.n_gpu))
         generator = torch.nn.DataParallel(generator, device_ids=device_ids)
         discriminator = torch.nn.DataParallel(discriminator, device_ids=device_ids)
 
-    # get function handles of loss and metrics
-    gen_loss_module = config.init_obj(config["gen_loss"], module_loss).to(device)
-    dis_loss_module = config.init_obj(config["dis_loss"], module_loss).to(device)
-    metrics = [
-        config.init_obj(metric_dict, module_metric)
-        for metric_dict in config["metrics"]
-    ]
+    gen_loss_module = instantiate(config.gen_loss).to(device)
+    dis_loss_module = instantiate(config.dis_loss).to(device)
+    metrics = instantiate(config.metrics)
 
-    # build optimizer, learning rate scheduler. delete every line containing lr_scheduler for
-    # disabling scheduler
     trainable_params = filter(lambda p: p.requires_grad, generator.parameters())
-    gen_optimizer = config.init_obj(config["gen_optimizer"], torch.optim, trainable_params)
-    gen_lr_scheduler = config.init_obj(config["gen_lr_scheduler"], torch.optim.lr_scheduler, gen_optimizer)
+    gen_optimizer = instantiate(config.gen_optimizer, params=trainable_params)
+    gen_lr_scheduler = instantiate(config.gen_lr_scheduler, optimizer=gen_optimizer)
 
     trainable_params = filter(lambda p: p.requires_grad, discriminator.parameters())
-    dis_optimizer = config.init_obj(config["dis_optimizer"], torch.optim, trainable_params)
-    dis_lr_scheduler = config.init_obj(config["dis_lr_scheduler"], torch.optim.lr_scheduler, dis_optimizer)
+    dis_optimizer = instantiate(config.dis_optimizer, params=trainable_params)
+    dis_lr_scheduler = instantiate(config.dis_lr_scheduler, optimizer=dis_optimizer)
 
     trainer = Trainer(
         generator,
@@ -74,43 +71,11 @@ def main(config):
         dataloaders=dataloaders,
         gen_lr_scheduler=gen_lr_scheduler,
         dis_lr_scheduler=dis_lr_scheduler,
-        len_epoch=config["trainer"].get("len_epoch", None)
+        len_epoch=config.trainer.get("len_epoch", None)
     )
 
     trainer.train()
 
 
 if __name__ == "__main__":
-    args = argparse.ArgumentParser(description="PyTorch Template")
-    args.add_argument(
-        "-c",
-        "--config",
-        default=None,
-        type=str,
-        help="config file path (default: None)",
-    )
-    args.add_argument(
-        "-r",
-        "--resume",
-        default=None,
-        type=str,
-        help="path to latest checkpoint (default: None)",
-    )
-    args.add_argument(
-        "-d",
-        "--device",
-        default=None,
-        type=str,
-        help="indices of GPUs to enable (default: all)",
-    )
-
-    # custom cli options to modify configuration from default values given in json file.
-    CustomArgs = collections.namedtuple("CustomArgs", "flags type target")
-    options = [
-        CustomArgs(["--lr", "--learning_rate"], type=float, target="optimizer;args;lr"),
-        CustomArgs(
-            ["--bs", "--batch_size"], type=int, target="data_loader;args;batch_size"
-        ),
-    ]
-    config = ConfigParser.from_args(args, options)
-    main(config)
+    main()

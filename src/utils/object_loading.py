@@ -9,7 +9,7 @@ from src.utils.parse_config import ConfigParser
 
 def get_dataloaders(configs: ConfigParser):
     dataloaders = {}
-    for split, params in configs["data"].items():
+    for split, params in configs["datasets"].items():
         num_workers = params.get("num_workers", 1)
 
         # set train augmentations
