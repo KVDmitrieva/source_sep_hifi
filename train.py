@@ -66,6 +66,7 @@ def main(config):
         metrics,
         gen_optimizer,
         dis_optimizer,
+        logger=logger,
         config=config,
         device=device,
         dataloaders=dataloaders,

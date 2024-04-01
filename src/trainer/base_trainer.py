@@ -13,10 +13,10 @@ class BaseTrainer:
     """
 
     def __init__(self, generator: BaseModel, discriminator: BaseModel, gen_criterion, dis_criterion, metrics,
-                 gen_optimizer, dis_optimizer, gen_lr_scheduler, dis_lr_scheduler, config, device):
+                 gen_optimizer, dis_optimizer, gen_lr_scheduler, dis_lr_scheduler, logger, config, device):
         self.device = device
         self.config = config
-        self.logger = config.get_logger("trainer", config["trainer"]["verbosity"])
+        self.logger = logger
 
         self.generator = generator
         self.discriminator = discriminator
