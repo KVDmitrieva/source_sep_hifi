@@ -1,18 +1,14 @@
 train:
-  batch_size: 32
-  num_workers: 0
   datasets:
-    - type: VCTKDataset
-      args:
-        part: testset
-        max_audio_length: 32768
-        limit: 32
+    - _target_: src.datasets.VCTKDataset
+      part: testset
+      data_dir: /kaggle/input/vctk-datasets
+      max_audio_length: 32768
+      limit: ${dataloaders.batch_size}
 val:
-  batch_size: 32
-  num_workers: 0
   datasets:
-    - type: VCTKDataset
-      args:
-        part: testset
-        max_audio_length: 32768
-        limit: 32
+    - _target_: src.datasets.VCTKDataset
+      part: testset
+      data_dir: /kaggle/input/vctk-datasets
+      max_audio_length: 32768
+      limit: ${dataloaders.batch_size}

@@ -1,20 +1,12 @@
 name: one_batch_hifi_full
-n_gpu: 1
-preprocessing:
-  sr: 16000
-  spectrogram:
-    type: MelSpectrogram
-    args: {}
-  log_spec: true
-
 defaults:
   - generator: generator
   - discriminator: discriminator
   - writer: wandb
   - metrics: enhancement
-  - data: one_batch_data
-  - dataloader: example
-  - transforms: example
+  - datasets: one_batch_data
+  - preprocessing: default
+  - dataloader: default
   - _self_
 
 gen_optimizer:
@@ -49,4 +41,7 @@ trainer:
   monitor: min val_loss
   early_stop: 100
   visualize: wandb
+  random_seed: 123
+  device: auto
+  n_gpu: 1
   wandb_project: hifi_plusplus

@@ -12,7 +12,7 @@ defaults:
   - discriminator: discriminator
   - writer: wandb
   - metrics: enhancement
-  - data: full_data
+  - datasets: full_data
   - dataloader: example
   - transforms: example
   - _self_
@@ -49,4 +49,5 @@ trainer:
   monitor: min val_loss
   early_stop: 100
   visualize: wandb
+  random_seed: 123
   wandb_project: hifi_plusplus
