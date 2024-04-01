@@ -9,7 +9,8 @@ from tqdm import tqdm
 from src.trainer.base_trainer import BaseTrainer
 from src.logger.utils import plot_spectrogram_to_buf
 from src.utils import inf_loop, MetricTracker
-from src.datasets.utils import MelSpectrogram, MelSpectrogramConfig
+
+from hydra.utils import instantiate
 
 
 class Trainer(BaseTrainer):
@@ -17,10 +18,10 @@ class Trainer(BaseTrainer):
     Trainer class
     """
 
-    def __init__(self, generator, discriminator, gen_criterion, dis_criterion, metrics, gen_optimizer, dis_optimizer,
+    def __init__(self, generator, discriminator, gen_criterion, dis_criterion, metrics, gen_optimizer, dis_optimizer, logger,
                  config, device, dataloaders, gen_lr_scheduler=None, dis_lr_scheduler=None, len_epoch=None, skip_oom=True):
         super().__init__(generator, discriminator, gen_criterion, dis_criterion, metrics, gen_optimizer,
-                         dis_optimizer, gen_lr_scheduler, dis_lr_scheduler, config, device)
+                         dis_optimizer, gen_lr_scheduler, dis_lr_scheduler, logger, config, device)
         self.skip_oom = skip_oom
         self.config = config
         self.train_dataloader = dataloaders["train"]
@@ -32,8 +33,8 @@ class Trainer(BaseTrainer):
             self.train_dataloader = inf_loop(self.train_dataloader)
             self.len_epoch = len_epoch
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items() if k != "train"}
-        self.log_step = config["trainer"].get("log_step", 50)
-        self.log_media = config["trainer"].get("log_media", 1)
+        self.log_step = config.trainer.get("log_step", 50)
+        self.log_media = config.trainer.get("log_media", 1)
         self.train_metrics = MetricTracker(
             "discriminator_loss", "generator_loss", "adv_loss", "mel_loss", "feature_loss",
             "gen grad norm", "dis grad norm", *[m.name for m in self.metrics], writer=self.writer
@@ -43,7 +44,7 @@ class Trainer(BaseTrainer):
             *[m.name for m in self.metrics], writer=self.writer
         )
 
-        self.mel_spec = MelSpectrogram(MelSpectrogramConfig())
+        self.mel_spec = instantiate(config.preprocessing.spectrogram)
         self.mel_spec = self.mel_spec.to(self.device)
 
     @staticmethod
@@ -57,9 +58,9 @@ class Trainer(BaseTrainer):
 
     def _clip_grad_norm(self, model_type="gen"):
         model = self.generator if model_type == "gen" else self.discriminator
-        if self.config["trainer"].get("grad_norm_clip", None) is not None:
+        if self.config.trainer.get("grad_norm_clip", None) is not None:
             clip_grad_norm_(
-                model.parameters(), self.config["trainer"]["grad_norm_clip"]
+                model.parameters(), self.config.trainer.grad_norm_clip
             )
 
     def _train_epoch(self, epoch):
@@ -228,14 +229,15 @@ class Trainer(BaseTrainer):
             self.writer.add_image(name, ToTensor()(image))
 
     def _log_triplet_audio(self, batch):
+        sr = self.config.preprocessing.sr
         ind = random.randint(0, batch["audio"].shape[0] - 1)
-        self.writer.add_audio("noisy_audio", batch["audio"][ind].detach().cpu(), self.config["preprocessing"]["sr"])
-        self.writer.add_audio("generated_audio", batch["generator_audio"][ind].detach().cpu(), self.config["preprocessing"]["sr"])
-        self.writer.add_audio("target_audio", batch["target_audio"][ind].detach().detach().cpu(), self.config["preprocessing"]["sr"])
+        self.writer.add_audio("noisy_audio", batch["audio"][ind].detach().cpu(), sr)
+        self.writer.add_audio("generated_audio", batch["generator_audio"][ind].detach().cpu(), sr)
+        self.writer.add_audio("target_audio", batch["target_audio"][ind].detach().detach().cpu(), sr)
 
     def _log_audio(self, audio_batch, name="audio"):
         audio = random.choice(audio_batch.detach().cpu())
-        self.writer.add_audio(name, audio, self.config["preprocessing"]["sr"])
+        self.writer.add_audio(name, audio, self.config.preprocessing.sr)
 
     @torch.no_grad()
     def get_grad_norm(self, model_type="gen", norm_type=2):

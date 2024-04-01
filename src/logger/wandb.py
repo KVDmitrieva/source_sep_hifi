@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import wandb
 
+from omegaconf import OmegaConf
+
 
 class WanDBWriter:
     def __init__(self, config, logger):
@@ -14,13 +16,13 @@ class WanDBWriter:
             import wandb
             wandb.login()
 
-            if config['trainer'].get('wandb_project') is None:
+            if config.trainer.get('wandb_project') is None:
                 raise ValueError("please specify project name for wandb")
 
             wandb.init(
-                project=config['trainer'].get('wandb_project'),
-                name=config['name'],
-                config=config.config
+                project=config.trainer.get('wandb_project'),
+                name=config.name,
+                config=OmegaConf.to_container(config),
             )
             self.wandb = wandb
 
