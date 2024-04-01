@@ -1,4 +1,4 @@
-name: one_batch_full_hifi_plus_official
+name: HiFi++
 n_gpu: 1
 preprocessing:
   sr: 16000
@@ -6,38 +6,44 @@ preprocessing:
     type: MelSpectrogram
     args: {}
   log_spec: true
-augmentations:
-  wave: []
-  spectrogram: []
-generator:
-  type: A2AHiFiPlusGeneratorV2
-  args: {}
 
-data:
-  train:
-    batch_size: 24
-    num_workers: 0
-    datasets:
-      - type: VCTKDataset
-        args:
-          part: testset
-          max_audio_length: 32768
-          limit: 24
-  val:
-    batch_size: 24
-    num_workers: 0
-    datasets:
-      - type: VCTKDataset
-        args:
-          part: testset
-          max_audio_length: 32768
-          limit: 24
+defaults:
+  - generator: generator
+  - discriminator: discriminator
+  - writer: wandb
+  - metrics: enhancement
+  - data: full_data
+  - dataloader: example
+  - transforms: example
+  - _self_
 
+gen_optimizer:
+  _target_: torch.optim.AdamW
+  lr: 2e-4
+  betas: [0.8, 0.99]
+dis_optimizer:
+  _target_: torch.optim.AdamW
+  lr: 2e-4
+  betas: [0.8, 0.99]
+
+gen_lr_scheduler:
+  _target_: torch.optim.lr_scheduler.ExponentialLR
+  gamma: 0.999
+dis_lr_scheduler:
+  _target_: torch.optim.lr_scheduler.ExponentialLR
+  gamma: 0.999
+
+gen_loss:
+  _target_: src.loss.GeneratorLoss
+  mel_lambda: 45
+  fm_lambda: 2
+dis_loss:
+  _target_: src.loss.DiscriminatorLoss
 
 trainer:
-  epochs: 2000
+  epochs: 20
   save_dir: saved/
-  save_period: 1000
+  save_period: 5
   verbosity: 2
   log_media: 5
   monitor: min val_loss

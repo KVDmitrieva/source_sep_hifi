@@ -1,11 +1,22 @@
+name: one_batch_hifi_full
+n_gpu: 1
+preprocessing:
+  sr: 16000
+  spectrogram:
+    type: MelSpectrogram
+    args: {}
+  log_spec: true
+
 defaults:
-  - model: baseline
+  - generator: generator
+  - discriminator: discriminator
   - writer: wandb
   - metrics: enhancement
-  - datasets: example
+  - data: one_batch_data
   - dataloader: example
   - transforms: example
   - _self_
+
 gen_optimizer:
   _target_: torch.optim.AdamW
   lr: 2e-4
@@ -14,27 +25,28 @@ dis_optimizer:
   _target_: torch.optim.AdamW
   lr: 2e-4
   betas: [0.8, 0.99]
+
 gen_lr_scheduler:
   _target_: torch.optim.lr_scheduler.ExponentialLR
   gamma: 0.999
 dis_lr_scheduler:
   _target_: torch.optim.lr_scheduler.ExponentialLR
   gamma: 0.999
+
 gen_loss:
   _target_: src.loss.GeneratorLoss
   mel_lambda: 45
   fm_lambda: 2
 dis_loss:
   _target_: src.loss.DiscriminatorLoss
+
 trainer:
-  log_step: 50
   epochs: 2000
-  device_tensors: ["data_object", "labels"] # which tensors should be on device (ex. GPU)
-  resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
-  device: auto # device name or "auto"
-  override: False # if True, will override the previous run with the same name
-  monitor: "max test_MulticlassAccuracy" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
-  save_period: 5 # checkpoint each save_period epochs in addition to the best epoch
-  early_stop: ${trainer.n_epochs} # epochs for early stopping
-  save_dir: "saved"
-  seed: 42
+  save_dir: saved/
+  save_period: 1000
+  verbosity: 2
+  log_media: 5
+  monitor: min val_loss
+  early_stop: 100
+  visualize: wandb
+  wandb_project: hifi_plusplus
