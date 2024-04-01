@@ -29,7 +29,7 @@ class VCTKDataset(BaseDataset):
         assert part in ['testset', 'trainset_28spk', 'testset_56spk'] or part == 'train_all'
 
         if index_dir is None:
-            index_dir = ROOT_PATH / "data" / "datasets" / "vctk"
+            index_dir = ROOT_PATH / "datasets" / "datasets" / "vctk"
             index_dir.mkdir(exist_ok=True, parents=True)
 
         self._index_dir = Path(index_dir)
