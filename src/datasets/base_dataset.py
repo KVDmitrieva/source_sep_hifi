@@ -7,27 +7,17 @@ import torchaudio
 from torch import Tensor
 from torch.utils.data import Dataset
 
-from src.utils.parse_config import ConfigParser
-from src.datasets.utils import MelSpectrogram, MelSpectrogramConfig
+from hydra.utils import instantiate
 
 logger = logging.getLogger(__name__)
 
 
 class BaseDataset(Dataset):
-    def __init__(
-            self,
-            index,
-            config_parser: ConfigParser,
-            wave_augs=None,
-            spec_augs=None,
-            limit=None,
-            max_audio_length=None
-    ):
-        self.config_parser = config_parser
+    def __init__(self, index, config, wave_augs=None, spec_augs=None, limit=None, max_audio_length=None):
         self.wave_augs = wave_augs
         self.spec_augs = spec_augs
-        self.log_spec = config_parser["preprocessing"]["log_spec"]
-        self.mel_spec = MelSpectrogram(MelSpectrogramConfig())
+        self.log_spec = config.preprocessing.log_spec
+        self.mel_spec = instantiate(config.preprocessing.spectrogram)
 
         self.max_len = max_audio_length
         index = self._filter_records_from_dataset(index, limit)
@@ -40,10 +30,28 @@ class BaseDataset(Dataset):
     def __len__(self):
         return len(self._index)
 
+    def __getitem__(self, ind):
+        data_dict = self._index[ind]
+        noisy_audio = self.load_audio(data_dict["noisy_path"])
+        clean_audio = self.load_audio(data_dict["clean_path"])
+
+        if self.max_len is not None and noisy_audio.shape[-1] > self.max_len:
+            ind = random.randint(0, noisy_audio.shape[-1] - self.max_len)
+            noisy_audio = noisy_audio[:, ind:ind + self.max_len]
+            clean_audio = clean_audio[:, ind:ind + self.max_len]
+        noisy_audio, noisy_spec = self.process_wave(noisy_audio)
+        clean_audio, clean_spec = self.process_wave(clean_audio)
+        return {
+            "audio": noisy_audio,
+            "spectrogram": noisy_spec,
+            "target_audio": clean_audio,
+            "target_spectrogram": clean_spec
+        }
+
     def load_audio(self, path):
         audio_tensor, sr = torchaudio.load(path)
         audio_tensor = audio_tensor[0:1, :]
-        target_sr = self.config_parser["preprocessing"]["sr"]
+        target_sr = self.mel_spec.sr
         if sr != target_sr:
             audio_tensor = torchaudio.functional.resample(audio_tensor, sr, target_sr)
         return audio_tensor
@@ -65,7 +73,3 @@ class BaseDataset(Dataset):
             random.shuffle(index)
             index = index[:limit]
         return index
-
-    @staticmethod
-    def collate_fn():
-        raise NotImplementedError()
