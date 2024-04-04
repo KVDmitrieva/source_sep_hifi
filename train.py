@@ -87,14 +87,14 @@ if __name__ == "__main__":
         "--config",
         default=None,
         type=str,
-        help="config file path (default: None)",
+        help="config file noisy_path (default: None)",
     )
     args.add_argument(
         "-r",
         "--resume",
         default=None,
         type=str,
-        help="path to latest checkpoint (default: None)",
+        help="noisy_path to latest checkpoint (default: None)",
     )
     args.add_argument(
         "-d",

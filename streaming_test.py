@@ -11,6 +11,7 @@ import torchaudio
 import src.model as module_model
 from src.utils import ROOT_PATH
 from src.datasets.utils import MelSpectrogram, MelSpectrogramConfig
+from src.datasets.streamer import FastFileStreamer
 from src.utils.parse_config import ConfigParser
 from src.metric import *
 
@@ -18,10 +19,35 @@ from src.metric import *
 DEFAULT_CHECKPOINT_PATH = ROOT_PATH / "default_test_model" / "checkpoint.pth"
 
 
-def main(config, out_dir, test_dir, target_dir=None):
+def prepare_metric_log(add_metrics_with_ref: bool = False):
+    metric, metric_score = {}, {}
+    if torch.cuda.is_available():
+        metric["WMOS"] = WMOSMetric()
+
+    if add_metrics_with_ref:
+        metric["PESQ"] = PESQMetric()
+        metric["SI-SDR"] = SISDRMetric()
+        metric["SDR"] = SDRMetric()
+        metric["STOI"] = STOIMetric()
+
+    for m in metric.keys():
+        metric_score[m] = 0.
+
+    return metric, metric_score
+
+
+def load_audio(path, target_sr):
+    audio_tensor, sr = torchaudio.load(path)
+    audio_tensor = audio_tensor[0:1, :]
+    if sr != target_sr:
+        audio_tensor = torchaudio.functional.resample(audio_tensor, sr, target_sr)
+
+    return audio_tensor
+
+
+def main(config, out_dir, noisy_dir, target_dir=None):
     logger = config.get_logger("test")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    target_sr = config["preprocessing"]["sr"]
 
     model = config.init_obj(config["generator"], module_model)
     logger.info(model)
@@ -36,65 +62,40 @@ def main(config, out_dir, test_dir, target_dir=None):
     model = model.to(device)
     model.eval()
 
+    target_sr = config["preprocessing"]["sr"]
+    mel_spec = MelSpectrogram(MelSpectrogramConfig())
+    files = sorted(os.listdir(noisy_dir))
+
     if not Path(out_dir).exists():
         Path(out_dir).mkdir(exist_ok=True, parents=True)
 
-    mel_spec = MelSpectrogram(MelSpectrogramConfig())
-
-    files = sorted(os.listdir(test_dir))
-
-    test_dir = Path(test_dir)
-    out_dir = Path(out_dir)
+    noisy_dir, out_dir = Path(noisy_dir), Path(out_dir)
+    metric, metric_score = prepare_metric_log(target_dir is not None)
     results = []
-    metric = {}
-    metric_score = {}
-    if torch.cuda.is_available():
-        metric["WMOS"] = WMOSMetric()
-        metric_score["WMOS"] = 0.
 
     if target_dir is not None:
         target_dir = Path(target_dir)
 
-        metric["PESQ"] = PESQMetric()
-        metric["SI-SDR"] = SISDRMetric()
-        metric["SDR"] = SDRMetric()
-        metric["STOI"] = STOIMetric()
+    for file_name in tqdm(files, desc="Process file"):
+        noisy_audio = load_audio(noisy_dir / file_name, target_sr)
+        noisy_mel = mel_spec(noisy_audio).to(device)
 
-        metric_score["PESQ"] = 0.
-        metric_score["SI-SDR"] = 0.
-        metric_score["SDR"] = 0.
-        metric_score["STOI"] = 0.
+        gen_audio = model(noisy_mel, noisy_audio.unsqueeze(0).to(device)).squeeze(1)
+        path = f"{str(out_dir)}/{file_name}"
+        torchaudio.save(path, gen_audio.cpu(), target_sr)
 
-    for f in tqdm(files, desc="Process file"):
-        path = test_dir / f
-        audio_tensor, sr = torchaudio.load(path)
-        audio_tensor = audio_tensor[0:1, :]
-        if sr != target_sr:
-            audio_tensor = torchaudio.functional.resample(audio_tensor, sr, target_sr)
-        mel = mel_spec(audio_tensor).to(device)
+        clean_audio = None if target_dir is None else load_audio(target_dir / file_name, target_sr)
+        result = {"file": file_name}
+        for m in metric.keys():
+            if m == "WMOS":
+                result[m] = metric[m](gen_audio)
+            else:
+                to_pad = clean_audio.shape[1] - gen_audio.shape[1]
+                gen_audio = torch.nn.functional.pad(gen_audio, (0, to_pad))
+                result[m] = metric[m](gen_audio, clean_audio.to(device)).item()
+            metric_score[m] += result[m]
 
-        gen_audio = model(mel, audio_tensor.unsqueeze(0).to(device)).squeeze(1)
-        path = f"{str(out_dir)}/{f}"
-        torchaudio.save(path, gen_audio.cpu(), config["preprocessing"]["sr"])
-
-        if len(metric.keys()) > 0:
-            result = {"file": f}
-            if target_dir is not None:
-                path = target_dir / f
-                audio_tensor, sr = torchaudio.load(path)
-                audio_tensor = audio_tensor[0:1, :]
-                if sr != target_sr:
-                    audio_tensor = torchaudio.functional.resample(audio_tensor, sr, target_sr)
-
-            for m in metric.keys():
-                if m == "WMOS":
-                    result[m] = metric[m](gen_audio)
-                else:
-                    gen_audio = torch.nn.functional.pad(gen_audio, (0, audio_tensor.shape[1] - gen_audio.shape[1]))
-                    result[m] = metric[m](gen_audio, audio_tensor.to(device)).item()
-                metric_score[m] += result[m]
-
-            results.append(result)
+        results.append(result)
 
     for m in metric_score.keys():
         metric_score[m] /= len(files)
@@ -118,14 +119,14 @@ if __name__ == "__main__":
         "--config",
         default=None,
         type=str,
-        help="config file path (default: None)",
+        help="config file noisy_path (default: None)",
     )
     args.add_argument(
         "-r",
         "--resume",
         default=str(DEFAULT_CHECKPOINT_PATH.absolute().resolve()),
         type=str,
-        help="path to latest checkpoint (default: None)",
+        help="noisy_path to latest checkpoint (default: None)",
     )
     args.add_argument(
         "-d",
@@ -142,13 +143,14 @@ if __name__ == "__main__":
         help="Dir to write results",
     )
     args.add_argument(
-        "-t",
-        "--test_dir",
+        "-n",
+        "--noisy_dir",
         default=None,
         type=str,
-        help="Path to test audios",
+        help="Path to noisy audios",
     )
     args.add_argument(
+        "-t"
         "--target_dir",
         default=None,
         type=str,
@@ -172,4 +174,4 @@ if __name__ == "__main__":
         with Path(args.config).open() as f:
             config.config.update(json.load(f))
 
-    main(config, args.output, args.test_dir, args.target_dir)
+    main(config, args.output, args.noisy_dir, args.target_dir)

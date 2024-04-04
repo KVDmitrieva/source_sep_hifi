@@ -36,7 +36,7 @@ class LJspeechDataset(BaseDataset):
 
     def __getitem__(self, ind):
         data_dict = self._index[ind]
-        audio_path = data_dict["path"]
+        audio_path = data_dict["noisy_path"]
         audio_wave = self.load_audio(audio_path)
         if audio_wave.shape[-1] > self.max_len:
             ind = random.randint(0, audio_wave.shape[-1] - self.max_len)
@@ -122,7 +122,7 @@ class LJspeechDataset(BaseDataset):
                     if w_text.isascii():
                         index.append(
                             {
-                                "path": str(wav_path.absolute().resolve()),
+                                "noisy_path": str(wav_path.absolute().resolve()),
                                 "text": w_text.lower(),
                                 "audio_len": length,
                             }
