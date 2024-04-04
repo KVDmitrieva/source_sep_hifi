@@ -59,7 +59,8 @@ class Inferencer:
         noisy_audio = self._load_audio(noisy_path)
         noisy_mel = self.mel_spec(noisy_audio).to(self.device)
 
-        gen_audio = self.model(noisy_mel, noisy_audio.unsqueeze(0).to(self.device))
+        with torch.no_grad():
+            gen_audio = self.model(noisy_mel, noisy_audio.unsqueeze(0).to(self.device))
         gen_audio = gen_audio.cpu().squeeze(1)
         if out_path is not None:
             torchaudio.save(out_path, gen_audio, self.target_sr)
@@ -131,6 +132,3 @@ class Inferencer:
 
         with (out_dir / "result.txt").open("w") as f:
             json.dump(results, f, indent=2)
-
-
-

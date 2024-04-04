@@ -4,51 +4,51 @@ from pathlib import Path
 
 from tqdm import tqdm
 
+import numpy as np
+
 import torch
 import torchaudio
 
-from src.metric import *
 from src.inferencer.inferencer import Inferencer
 from src.datasets.streamer import FastFileStreamer
 
 
 class StreamingInferencer(Inferencer):
-    def __init__(self, config):
+    def __init__(self, config, chunk_size, window_delta):
         super().__init__(config)
 
-    @staticmethod
-    def _prepare_metrics():
-        metric = {}
-        if torch.cuda.is_available():
-            metric["WMOS"] = WMOSMetric()
+        # TODO: get chunk_size & window_delta from config
+        self.chunk_size = chunk_size
+        self.window_delta = window_delta
 
-        metric["PESQ"] = PESQMetric()
-        metric["SI-SDR"] = SISDRMetric()
-        metric["SDR"] = SDRMetric()
-        metric["STOI"] = STOIMetric()
+        self.streamer = FastFileStreamer(chunk_size, window_delta)
 
-        return metric
+    def denoise_streaming_audio(self, noisy_path: str, out_path: str = "result.wav", mode: str = "overlap_add"):
+        assert mode in ["overlap_add", "overlap_add_sin", "overlap_nonintersec"], "invalid overlap mode"
 
-    def _load_audio(self, path: str):
-        audio_tensor, sr = torchaudio.load(path)
-        audio_tensor = audio_tensor[0:1, :]
-        if sr != self.target_sr:
-            audio_tensor = torchaudio.functional.resample(audio_tensor, sr, self.target_sr)
-
-        return audio_tensor
-
-    def denoise_audio(self, noisy_path: str, out_path: str = "result.wav"):
         noisy_audio = self._load_audio(noisy_path)
-        noisy_mel = self.mel_spec(noisy_audio).to(self.device)
+        noisy_chunks, _ = self.streamer(noisy_audio, None)
 
-        gen_audio = self.model(noisy_mel, noisy_audio.unsqueeze(0).to(self.device))
-        gen_audio = gen_audio.cpu().squeeze(1)
+        outputs = []
+        for chunk in noisy_chunks:
+            mel_chunk = self.mel_spec(chunk).to(self.device)
+            with torch.no_grad():
+                gen_chunk = self.model(mel_chunk, chunk.unsqueeze(0).to(self.device))
+            outputs.append(gen_chunk.cpu().squeeze(1))
+
+        if mode == "overlap_add":
+            gen_audio = self.overlap_add(outputs, self.window_delta, self.chunk_size)
+        elif mode == "overlap_add_sin":
+            gen_audio = self.overlap_add_sin(outputs, self.window_delta, self.chunk_size)
+        else:
+            gen_audio = self.overlap_nonintersec(outputs, self.window_delta, self.chunk_size)
+
         if out_path is not None:
             torchaudio.save(out_path, gen_audio, self.target_sr)
 
         return gen_audio
 
-    def denoise_dir(self, noisy_dir: str, out_dir: str = "output"):
+    def denoise_streaming_dir(self, noisy_dir: str, out_dir: str = "output", mode: str = "overlap_add"):
         assert Path(noisy_dir).exists(), "invalid noisy_path"
 
         if not Path(out_dir).exists():
@@ -60,10 +60,10 @@ class StreamingInferencer(Inferencer):
         for file_name in tqdm(files, desc="Process file"):
             noisy_path = str(noisy_dir / file_name)
             out_path = str(out_dir / file_name)
-            _ = self.denoise_audio(noisy_path, out_path)
+            _ = self.denoise_streaming_audio(noisy_path, out_path, mode)
 
-    def validate_audio(self, noisy_path: str, clean_path: str, out_path: str = "result.wav", verbose=True):
-        gen_audio = self.denoise_audio(noisy_path, out_path)
+    def validate_streaming_audio(self, noisy_path: str, clean_path: str, out_path: str = "result.wav", mode: str = "overlap_add", verbose=True):
+        gen_audio = self.denoise_streaming_audio(noisy_path, out_path, mode)
         clean_audio = self._load_audio(clean_path)
 
         result = {}
@@ -80,7 +80,7 @@ class StreamingInferencer(Inferencer):
 
         return result
 
-    def validate_dir(self, noisy_dir: str, clean_dir: str, out_dir: str = "output", verbose=True):
+    def validate_streaming_dir(self, noisy_dir: str, clean_dir: str, out_dir: str = "output", mode: str = "overlap_add", verbose=True):
         assert Path(noisy_dir).exists(), "invalid noisy dir"
         assert Path(clean_dir).exists(), "invalid clean dir"
 
@@ -99,7 +99,7 @@ class StreamingInferencer(Inferencer):
             noisy_path = str(noisy_dir / file_name)
             clean_path = str(clean_dir / file_name)
             out_path = str(out_dir / file_name)
-            result = self.validate_audio(noisy_path, clean_path, out_path, verbose=False)
+            result = self.validate_streaming_audio(noisy_path, clean_path, out_path, mode, verbose=False)
 
             for m in metrics_score.keys():
                 metrics_score[m] += result[m]
@@ -114,8 +114,34 @@ class StreamingInferencer(Inferencer):
         with (out_dir / "result.txt").open("w") as f:
             json.dump(results, f, indent=2)
 
+    @staticmethod
+    def overlap_add(chunks, window_delta, chunk_size):
+        res = np.zeros(window_delta * len(chunks) + chunk_size)
+        for (i, ch) in enumerate(chunks):
+            res[window_delta * i:window_delta * i + chunk_size] += ch
 
+        return res
 
+    @staticmethod
+    def overlap_add_sin(chunks, window_delta, chunk_size):
+        window = np.sin((np.arange(window_delta) / (window_delta - 1)) * (np.pi / 2))
+        res = np.zeros(window_delta * len(chunks) + chunk_size)
+        for (i, ch) in enumerate(chunks):
+            if i == 0:
+                res[:chunk_size] = ch
+            else:
+                overlap = ch[:chunk_size - window_delta] * window + res[window_delta * i:window_delta * (i - 1) + chunk_size] * (1 - window)
+                res[window_delta * i:window_delta * (i - 1) + chunk_size] = overlap
+                res[window_delta * (i - 1) + chunk_size:window_delta * i + chunk_size] = ch[chunk_size - window_delta:]
 
+        return res
 
-
+    @staticmethod
+    def overlap_nonintersec(chunks, window_delta, chunk_size):
+        res = np.array([])
+        for (i, ch) in enumerate(chunks):
+            if i == 0:
+                res = np.append(res, ch)
+            else:
+                res = np.append(res, ch[-window_delta:])
+        return res
