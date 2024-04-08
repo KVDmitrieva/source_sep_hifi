@@ -33,7 +33,7 @@ class StreamingInferencer(Inferencer):
             mel_chunk = self.mel_spec(chunk).to(self.device)
             with torch.no_grad():
                 gen_chunk = self.model(mel_chunk, chunk.unsqueeze(0).to(self.device))
-            outputs.append(gen_chunk.cpu().squeeze(1))
+            outputs.append(gen_chunk.cpu().squeeze())
 
         if mode == "overlap_add":
             gen_audio = self.overlap_add(outputs, self.window_delta, self.chunk_size)
