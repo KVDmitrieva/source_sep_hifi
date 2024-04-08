@@ -4,14 +4,11 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-import numpy as np
-
 import torch
 import torchaudio
 
 from src.inferencer.inferencer import Inferencer
 from src.datasets.streamer import FastFileStreamer
-from src.datasets.utils import MelSpectrogram, MelSpectrogramConfig
 
 
 class StreamingInferencer(Inferencer):
@@ -23,22 +20,16 @@ class StreamingInferencer(Inferencer):
         self.window_delta = window_delta
 
         self.streamer = FastFileStreamer(chunk_size, window_delta)
-        # TODO: MelSpecConfig to configs
-        self.mel_spec = MelSpectrogram(MelSpectrogramConfig(
-            win_length=400,
-            hop_length=160,
-            n_fft=1024
-        ))
 
     def denoise_streaming_audio(self, noisy_path: str, out_path: str = "result.wav", mode: str = "overlap_add"):
         assert mode in ["overlap_add", "overlap_add_sin", "overlap_nonintersec"], "invalid overlap mode"
 
         noisy_audio = self._load_audio(noisy_path)
-        noisy_chunks, _ = self.streamer(noisy_audio, None)
+        noisy_chunks, _ = self.streamer(noisy_audio.squeeze(0), None)
 
         outputs = []
         for chunk in noisy_chunks:
-            chunk = torch.tensor(chunk)
+            chunk = torch.tensor(chunk).unsqueeze(0)
             mel_chunk = self.mel_spec(chunk).to(self.device)
             with torch.no_grad():
                 gen_chunk = self.model(mel_chunk, chunk.unsqueeze(0).to(self.device))
@@ -51,6 +42,7 @@ class StreamingInferencer(Inferencer):
         else:
             gen_audio = self.overlap_nonintersec(outputs, self.window_delta, self.chunk_size)
 
+        gen_audio = gen_audio.unsqueeze(0)
         if out_path is not None:
             torchaudio.save(out_path, gen_audio, self.target_sr)
 
@@ -123,7 +115,7 @@ class StreamingInferencer(Inferencer):
 
     @staticmethod
     def overlap_add(chunks, window_delta, chunk_size):
-        res = np.zeros(window_delta * len(chunks) + chunk_size)
+        res = torch.zeros(window_delta * len(chunks) + chunk_size)
         for (i, ch) in enumerate(chunks):
             res[window_delta * i:window_delta * i + chunk_size] += ch
 
@@ -131,13 +123,14 @@ class StreamingInferencer(Inferencer):
 
     @staticmethod
     def overlap_add_sin(chunks, window_delta, chunk_size):
-        window = np.sin((np.arange(window_delta) / (window_delta - 1)) * (np.pi / 2))
-        res = np.zeros(window_delta * len(chunks) + chunk_size)
+        window = torch.sin((torch.arange(window_delta) / (window_delta - 1)) * (torch.pi / 2))
+        res = torch.zeros(window_delta * len(chunks) + chunk_size)
         for (i, ch) in enumerate(chunks):
             if i == 0:
                 res[:chunk_size] = ch
             else:
-                overlap = ch[:chunk_size - window_delta] * window + res[window_delta * i:window_delta * (i - 1) + chunk_size] * (1 - window)
+                overlap = ch[:chunk_size - window_delta] * window + res[window_delta * i:window_delta * (
+                            i - 1) + chunk_size] * (1 - window)
                 res[window_delta * i:window_delta * (i - 1) + chunk_size] = overlap
                 res[window_delta * (i - 1) + chunk_size:window_delta * i + chunk_size] = ch[chunk_size - window_delta:]
 
@@ -145,10 +138,11 @@ class StreamingInferencer(Inferencer):
 
     @staticmethod
     def overlap_nonintersec(chunks, window_delta, chunk_size):
-        res = np.array([])
+        res = torch.tensor([])
         for (i, ch) in enumerate(chunks):
             if i == 0:
-                res = np.append(res, ch)
+                res = torch.cat([res, ch], dim=-1)
             else:
-                res = np.append(res, ch[-window_delta:])
+                res = torch.cat([res, ch[-window_delta:]], dim=-1)
         return res
+

@@ -107,8 +107,8 @@ class FastFileStreamer(FileStreamer):
         """
         Calls FileStreamer to get list of chunks from two audios (assuming mix and target have the same length)
         Input
-        float[] signal_mix -- mixed audio (N,)
-        float[] signal_target -- mixed audio (N,), can be None, in this case an empty list is returned
+        float[] signal_mix -- mixed audio (N, )
+        float[] signal_target -- mixed audio (N, ), can be None, in this case an empty list is returned
         Output
         two lists of chunks: chunks_mix, chunks_target
         """
@@ -123,13 +123,19 @@ class FastFileStreamer(FileStreamer):
         return chunks_mix, chunks_target
 
     def _process_audio(self, signal):
-        num_mix = len(signal) - self.chunk_size
+        """
+        Input
+        float[] signal -- audio (time, )
+        Output
+        float[] chunked_signal -- chunked audio (num_chunks, len_chunk)
+        """
+        num_mix = signal.shape[-1] - self.chunk_size
         n_mix = num_mix // self.window_delta + (num_mix % self.window_delta > 0)
-        n_pad = self.window_delta * n_mix + self.chunk_size - len(signal)
+        n_pad = self.window_delta * n_mix + self.chunk_size - signal.shape[-1]
 
-        signal = np.pad(signal, ((0, 0), (0, n_pad)), 'constant', constant_values=(0, 1e-5))
+        signal = np.pad(signal, (0, n_pad), 'constant', constant_values=(0, 1e-5))
         chunks = frame(signal, frame_length=self.chunk_size, hop_length=self.window_delta)
-        return chunks
+        return chunks.transpose(1, 0)
 
 
 class FastFileStreamerBatched(FastFileStreamer):
@@ -146,11 +152,16 @@ class FastFileStreamerBatched(FastFileStreamer):
         super().__init__(chunk_size, window_delta)
 
     def _process_audio(self, signal):
-        signal_example = signal[0, :]
-        num_mix = len(signal_example) - self.chunk_size
+        """
+        Input
+        float[] signal -- audio (batch_size, time)
+        Output
+        float[] chunked_signal -- chunked audio (batch_size, num_chunks, len_chunk)
+        """
+        num_mix = signal.shape[-1] - self.chunk_size
         n_mix = num_mix // self.window_delta + (num_mix % self.window_delta > 0)
-        n_pad = self.window_delta * n_mix + self.chunk_size - len(signal_example)
+        n_pad = self.window_delta * n_mix + self.chunk_size - signal.shape[-1]
 
         signal = np.pad(signal, ((0, 0), (0, n_pad)), 'constant', constant_values=(0, 1e-5))
         chunks = frame(signal, frame_length=self.chunk_size, hop_length=self.window_delta)
-        return chunks
+        return chunks.transpose(0, 2, 1)
