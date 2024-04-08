@@ -11,6 +11,7 @@ import torchaudio
 
 from src.inferencer.inferencer import Inferencer
 from src.datasets.streamer import FastFileStreamer
+from src.datasets.utils import MelSpectrogram, MelSpectrogramConfig
 
 
 class StreamingInferencer(Inferencer):
@@ -22,6 +23,12 @@ class StreamingInferencer(Inferencer):
         self.window_delta = window_delta
 
         self.streamer = FastFileStreamer(chunk_size, window_delta)
+        # TODO: MelSpecConfig to configs
+        self.mel_spec = MelSpectrogram(MelSpectrogramConfig(
+            win_length=400,
+            hop_length=160,
+            n_fft=1024
+        ))
 
     def denoise_streaming_audio(self, noisy_path: str, out_path: str = "result.wav", mode: str = "overlap_add"):
         assert mode in ["overlap_add", "overlap_add_sin", "overlap_nonintersec"], "invalid overlap mode"
