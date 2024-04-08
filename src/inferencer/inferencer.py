@@ -92,7 +92,7 @@ class Inferencer:
             else:
                 to_pad = clean_audio.shape[1] - gen_audio.shape[1]
                 gen_audio = torch.nn.functional.pad(gen_audio, (0, to_pad))
-                result[m] = self.metric[m](gen_audio, clean_audio).item()
+                result[m] = self.metrics[m](gen_audio, clean_audio).item()
 
             if verbose:
                 print(f"{m}: {result[m]:.3f}")
