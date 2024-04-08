@@ -31,6 +31,7 @@ class StreamingInferencer(Inferencer):
 
         outputs = []
         for chunk in noisy_chunks:
+            chunk = torch.tensor(chunk)
             mel_chunk = self.mel_spec(chunk).to(self.device)
             with torch.no_grad():
                 gen_chunk = self.model(mel_chunk, chunk.unsqueeze(0).to(self.device))
