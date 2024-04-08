@@ -1,5 +1,5 @@
 from torch import Tensor
-from torchmetrics import ScaleInvariantSignalDistortionRatio
+from torchmetrics.audio import ScaleInvariantSignalDistortionRatio
 
 from src.metric.base_metric import BaseMetric
 
