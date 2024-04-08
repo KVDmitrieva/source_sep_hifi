@@ -31,10 +31,10 @@ if __name__ == "__main__":
         "-n", "--noisy_dir", default=None, type=str, help="Path to noisy audios",
     )
     args.add_argument(
-        "-t" "--target_dir", default=None, type=str, help="Path to target audios",
+        "-t", "--target_dir", default=None, type=str, help="Path to target audios",
     )
     args.add_argument(
-        "-m" "--overlap_mode", default=None, type=str, help="Overlap mode",
+        "-m", "--overlap_mode", default=None, type=str, help="Overlap mode",
     )
 
     args = args.parse_args()
