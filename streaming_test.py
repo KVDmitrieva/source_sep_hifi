@@ -51,7 +51,7 @@ if __name__ == "__main__":
             config.config.update(json.load(f))
 
     # TODO: add params to config
-    inferencer = StreamingInferencer(config, chunk_size=3200, window_delta=1600)
+    inferencer = StreamingInferencer(config, chunk_size=6400, window_delta=3200)
 
     if args.target_dir is None:
         inferencer.denoise_streaming_dir(args.noisy_dir, args.output, args.overlap_mode)
