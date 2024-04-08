@@ -66,7 +66,7 @@ class StreamingInferencer(Inferencer):
         gen_audio = self.denoise_streaming_audio(noisy_path, out_path, mode)
         clean_audio = self._load_audio(clean_path)
 
-        result = {}
+        result = {"file": noisy_path.split('/')[-1]}
         for m in self.metrics.keys():
             if m == "WMOS":
                 result[m] = self.metrics[m](gen_audio.to(self.device))
@@ -104,7 +104,6 @@ class StreamingInferencer(Inferencer):
             for m in metrics_score.keys():
                 metrics_score[m] += result[m]
 
-            result[file_name] = result
             results.append(result)
 
         if verbose:
