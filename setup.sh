@@ -11,7 +11,7 @@ gdown --folder "https://drive.google.com/drive/folders/16xG39ZUC4qSJZaRMF-GOyHub
 gdown --folder "https://drive.google.com/drive/folders/1aUurEr9h1T0tk43VyWi6qdamBnQDHi2Z" -O checkpoints/hifi_fms_noise # 30 эпох
 
 mkdir checkpoints/hifi_official
-wget "https://github.com/SamsungLabs/hifi_plusplus/releases/download/w/se.pth" -O checkpoints/hifi_official/generaor.pth
+wget "https://github.com/SamsungLabs/hifi_plusplus/releases/download/w/se.pth" -O checkpoints/hifi_official/generator.pth
 cp "src/configs/hifi_official.json" "checkpoints/hifi_official/config.json"
 
 
