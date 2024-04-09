@@ -264,11 +264,11 @@ class A2AHiFiPlusGeneratorV2(HiFiPlusGenerator):
         x = self.apply_spectralunet(mel)
         x = self.hifi(x)
         if self.use_waveunet and self.waveunet_before_spectralmasknet:
-            x = self.apply_waveunet_a2a(x, audio)
+            x = self.apply_waveunet_a2a(x, x_orig)
         if self.use_spectralmasknet:
             x = self.apply_spectralmasknet(x)
         if self.use_waveunet and not self.waveunet_before_spectralmasknet:
-            x = self.apply_waveunet_a2a(x, audio)
+            x = self.apply_waveunet_a2a(x, x_orig)
 
         x = self.conv_post(x)
         x = torch.tanh(x)
