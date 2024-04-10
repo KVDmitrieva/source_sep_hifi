@@ -36,6 +36,9 @@ if __name__ == "__main__":
     args.add_argument(
         "-m", "--overlap_mode", default=None, type=str, help="Overlap mode",
     )
+    args.add_argument(
+        "-s", "--chunk_size", default=4096, type=int, help="Chunk size",
+    )
 
     args = args.parse_args()
 
@@ -51,7 +54,7 @@ if __name__ == "__main__":
             config.config.update(json.load(f))
 
     # TODO: add params to config
-    inferencer = StreamingInferencer(config, chunk_size=2048, window_delta=1024)
+    inferencer = StreamingInferencer(config, chunk_size=args.chunk_size, window_delta=args.chunk_size // 2)
 
     if args.target_dir is None:
         inferencer.denoise_streaming_dir(args.noisy_dir, args.output, args.overlap_mode)
