@@ -18,7 +18,7 @@ class Inferencer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         model = config.init_obj(config["generator"], module_model)
-        self.logger.info(model)
+        # self.logger.info(model)
 
         self.logger.info("Loading checkpoint: {} ...".format(config.resume))
         checkpoint = torch.load(config.resume, map_location=self.device)
