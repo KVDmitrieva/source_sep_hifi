@@ -35,10 +35,10 @@ class StreamingInferencer(Inferencer):
             with torch.no_grad():
                 gen_chunk = self.model(mel_chunk, chunk.unsqueeze(0).to(self.device))
 
-            # to_pad = chunk.shape[-1] - gen_chunk.shape[-1]
-            # gen_chunk = torch.nn.functional.pad(gen_chunk, (0, to_pad))
-            if normalize_chunk:
-                gen_chunk = gen_chunk / torch.amax(torch.abs(gen_chunk))
+            to_pad = chunk.shape[-1] - gen_chunk.shape[-1]
+            gen_chunk = torch.nn.functional.pad(gen_chunk, (0, to_pad))
+            # if normalize_chunk:
+            #     gen_chunk = gen_chunk / torch.amax(torch.abs(gen_chunk))
 
             outputs.append(gen_chunk.cpu().squeeze())
 
