@@ -21,7 +21,8 @@ class StreamingInferencer(Inferencer):
 
         self.streamer = FastFileStreamer(chunk_size, window_delta)
 
-    def denoise_streaming_audio(self, noisy_path: str, out_path: str = "result.wav", mode: str = "overlap_add"):
+    def denoise_streaming_audio(self, noisy_path: str, out_path: str = "result.wav",
+                                mode: str = "overlap_add", normalize_chunk: bool = True):
         assert mode in ["overlap_add", "overlap_add_sin", "overlap_nonintersec"], "invalid overlap mode"
 
         noisy_audio = self._load_audio(noisy_path)
@@ -34,8 +35,11 @@ class StreamingInferencer(Inferencer):
             with torch.no_grad():
                 gen_chunk = self.model(mel_chunk, chunk.unsqueeze(0).to(self.device))
 
-            to_pad = chunk.shape[-1] - gen_chunk.shape[-1]
-            gen_chunk = torch.nn.functional.pad(gen_chunk, (0, to_pad))
+            # to_pad = chunk.shape[-1] - gen_chunk.shape[-1]
+            # gen_chunk = torch.nn.functional.pad(gen_chunk, (0, to_pad))
+            if normalize_chunk:
+                gen_chunk = gen_chunk / torch.amax(torch.abs(gen_chunk))
+
             outputs.append(gen_chunk.cpu().squeeze())
 
         if mode == "overlap_add":
