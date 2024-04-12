@@ -58,7 +58,8 @@ class Inferencer:
     def denoise_audio(self, noisy_path: str, out_path: str = "result.wav"):
         noisy_audio = self._load_audio(noisy_path)
 
-        to_pad = self.closest_power_of_two(noisy_audio.shape[-1])
+        audio_len = noisy_audio.shape[-1]
+        to_pad = self.closest_power_of_two(audio_len)
         noisy_audio = torch.nn.functional.pad(noisy_audio, (0, to_pad))
 
         noisy_mel = self.mel_spec(noisy_audio).to(self.device)
@@ -66,7 +67,7 @@ class Inferencer:
         with torch.no_grad():
             gen_audio = self.model(noisy_mel, noisy_audio.unsqueeze(0).to(self.device))
         gen_audio = gen_audio.cpu().squeeze(1)
-        gen_audio = gen_audio[:noisy_audio.shape[-1]]
+        gen_audio = gen_audio[:audio_len]
         if out_path is not None:
             torchaudio.save(out_path, gen_audio, self.target_sr)
 
