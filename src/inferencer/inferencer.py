@@ -60,7 +60,7 @@ class Inferencer:
         noisy_audio = self._load_audio(noisy_path)
 
         audio_len = noisy_audio.shape[-1]
-        to_pad = self.closest_power_of_two(audio_len)
+        to_pad = self.closest_power_of_two(audio_len) - audio_len
         noisy_audio = torch.nn.functional.pad(noisy_audio, (0, to_pad))
 
         noisy_mel = self.mel_spec(noisy_audio).to(self.device)
@@ -91,9 +91,6 @@ class Inferencer:
     def validate_audio(self, noisy_path: str, clean_path: str, out_path: str = "result.wav", verbose=True):
         gen_audio = self.denoise_audio(noisy_path, out_path)
         clean_audio = self._load_audio(clean_path)
-
-        gen_audio = torch.from_numpy(librosa.util.normalize(gen_audio))
-        clean_audio = torch.from_numpy(librosa.util.normalize(clean_audio))
 
         result = {"file": noisy_path.split('/')[-1]}
         for m in self.metrics.keys():
