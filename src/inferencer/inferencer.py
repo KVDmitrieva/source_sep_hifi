@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 
+import librosa.util
 from tqdm import tqdm
 
 import torch
@@ -90,6 +91,9 @@ class Inferencer:
     def validate_audio(self, noisy_path: str, clean_path: str, out_path: str = "result.wav", verbose=True):
         gen_audio = self.denoise_audio(noisy_path, out_path)
         clean_audio = self._load_audio(clean_path)
+
+        gen_audio = torch.from_numpy(librosa.util.normalize(gen_audio))
+        clean_audio = torch.from_numpy(librosa.util.normalize(clean_audio))
 
         result = {"file": noisy_path.split('/')[-1]}
         for m in self.metrics.keys():
