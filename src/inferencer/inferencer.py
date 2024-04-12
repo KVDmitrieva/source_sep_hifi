@@ -67,7 +67,7 @@ class Inferencer:
         with torch.no_grad():
             gen_audio = self.model(noisy_mel, noisy_audio.unsqueeze(0).to(self.device))
         gen_audio = gen_audio.cpu().squeeze(1)
-        gen_audio = gen_audio[:audio_len]
+        gen_audio = gen_audio[:, :audio_len]
         if out_path is not None:
             torchaudio.save(out_path, gen_audio, self.target_sr)
 
