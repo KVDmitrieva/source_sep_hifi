@@ -83,7 +83,7 @@ class StreamingInferencer(Inferencer):
                 result[m] = self.metrics[m](gen_audio, clean_audio).item()
 
             if verbose:
-                print(f"{m}: {result[m]:.3f}")
+                print(f"{m}: {result.get(m, 0.0):.3f}")
 
         return result
 
@@ -109,7 +109,7 @@ class StreamingInferencer(Inferencer):
             result = self.validate_streaming_audio(noisy_path, clean_path, out_path, mode, verbose=False)
 
             for m in metrics_score.keys():
-                metrics_score[m] += result[m]
+                metrics_score[m] += result.get(m, 0.0)
 
             results.append(result)
 
