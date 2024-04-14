@@ -20,7 +20,7 @@ class MelSpectrogramConfig:
     power: float = 1.0
 
     # value of melspectrograms if we fed a silence into `MelSpectrogram`
-    pad_value: float = 0.0
+    pad_value: float = -11.5129251
 
 
 class MelSpectrogram(nn.Module):
