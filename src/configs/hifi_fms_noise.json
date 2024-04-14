@@ -1,5 +1,5 @@
 {
-  "name": "HiFi++ fms+noise_lr2",
+  "name": "HiFi++ fms+noise",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 16000,
@@ -256,7 +256,7 @@
     }
   },
   "trainer": {
-    "epochs": 45,
+    "epochs": 60,
     "save_dir": "saved/",
     "save_period": 5,
     "verbosity": 2,
