@@ -8,7 +8,7 @@ import torch
 import src.loss as module_loss
 import src.metric as module_metric
 import src.model as module_arch
-from src.trainer import Trainer
+from src.trainer import Trainer, StreamingTrainer
 from src.utils import prepare_device
 from src.utils.object_loading import get_dataloaders
 from src.utils.parse_config import ConfigParser
@@ -23,7 +23,7 @@ torch.backends.cudnn.benchmark = True
 np.random.seed(SEED)
 
 
-def main(config):
+def main(config, streaming=False):
     logger = config.get_logger("train")
 
     # setup data_loader instances
@@ -61,7 +61,9 @@ def main(config):
     dis_optimizer = config.init_obj(config["dis_optimizer"], torch.optim, trainable_params)
     dis_lr_scheduler = config.init_obj(config["dis_lr_scheduler"], torch.optim.lr_scheduler, dis_optimizer)
 
-    trainer = Trainer(
+    trainer_mode = StreamingTrainer if streaming else Trainer
+
+    trainer = trainer_mode(
         generator,
         discriminator,
         gen_loss_module,
@@ -87,14 +89,14 @@ if __name__ == "__main__":
         "--config",
         default=None,
         type=str,
-        help="config file noisy_path (default: None)",
+        help="config file path (default: None)",
     )
     args.add_argument(
         "-r",
         "--resume",
         default=None,
         type=str,
-        help="noisy_path to latest checkpoint (default: None)",
+        help="path to latest checkpoint (default: None)",
     )
     args.add_argument(
         "-d",
@@ -102,6 +104,13 @@ if __name__ == "__main__":
         default=None,
         type=str,
         help="indices of GPUs to enable (default: all)",
+    )
+    args.add_argument(
+        "-s",
+        "--streaming",
+        default=False,
+        type=bool,
+        help="Use streaming trainer",
     )
 
     # custom cli options to modify configuration from default values given in json file.
@@ -113,4 +122,5 @@ if __name__ == "__main__":
         ),
     ]
     config = ConfigParser.from_args(args, options)
-    main(config)
+    args = args.parse_args()
+    main(config, args.streaming)
