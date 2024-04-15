@@ -174,7 +174,7 @@
   },
   "data": {
     "train": {
-      "batch_size": 32,
+      "batch_size": 24,
       "num_workers": 0,
       "datasets": [
         {
@@ -182,13 +182,13 @@
           "args": {
             "part": "testset",
             "max_audio_length": 32768,
-            "limit": 32
+            "limit": 24
           }
         }
       ]
     },
     "val": {
-      "batch_size": 32,
+      "batch_size": 24,
       "num_workers": 0,
       "datasets": [
         {
@@ -196,7 +196,7 @@
           "args": {
             "part": "testset",
             "max_audio_length": 32768,
-            "limit": 32
+            "limit": 24
           }
         }
       ]
