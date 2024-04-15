@@ -174,7 +174,7 @@
   },
    "data": {
     "train": {
-      "batch_size": 32,
+      "batch_size": 48,
       "num_workers": 0,
       "datasets": [
         {
@@ -188,7 +188,7 @@
       ]
     },
     "val": {
-      "batch_size": 32,
+      "batch_size": 48,
       "num_workers": 0,
       "datasets": [
         {
@@ -276,7 +276,7 @@
     "window_delta": 2048
   },
   "trainer": {
-    "epochs": 40,
+    "epochs": 20,
     "save_dir": "saved/",
     "save_period": 5,
     "verbosity": 2,
