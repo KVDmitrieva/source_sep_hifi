@@ -17,7 +17,6 @@ class StreamingTrainer(Trainer):
         self.streamer = FastFileStreamerBatched(chunk_size=config["streamer"]["chunk_size"],
                                                 window_delta=config["streamer"]["window_delta"])
 
-
     @staticmethod
     def move_batch_to_device(batch, device: torch.device):
         """

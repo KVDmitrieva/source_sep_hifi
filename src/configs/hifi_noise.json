@@ -264,6 +264,10 @@
       "gamma": 0.999
     }
   },
+    "streamer": {
+    "chunk_size": 4096,
+    "window_delta": 2048
+  },
   "trainer": {
     "epochs": 40,
     "save_dir": "saved/",
