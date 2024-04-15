@@ -41,7 +41,7 @@ class StreamingTrainer(Trainer):
         gen_chunks = gen_chunks.reshape(bs, chunk_num, chunk_size)
         batch["generator_audio"] = self.overlap_add_batched(
             gen_chunks, self.streamer.window_delta, self.streamer.chunk_size
-        )
+        ).unsqueeze(1)
 
         if is_train:
             self.dis_optimizer.zero_grad()
