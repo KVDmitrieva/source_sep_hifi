@@ -38,8 +38,8 @@ python3 test.py -c MODEL_CONFIG.json \
 ```
 Example for `hifi_plus` checkpoint:
 ```shell
-python3 test.py -c checkponts/hifi_plusplus/config.json \
-                -r checkponts/hifi_plusplus/generator.pth \
+python3 test.py -c checkpoints/hifi_plusplus/config.json \
+                -r checkpoints/hifi_plusplus/generator.pth \
                 -o hifi_plusplus_out \
                 -n data/noisy_testset_wav \
                 -t data/clean_testset_wav
