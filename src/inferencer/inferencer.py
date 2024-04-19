@@ -36,20 +36,6 @@ class Inferencer:
 
         self.wmos = WMOSMetric() if torch.cuda.is_available() else None
         self.composite_eval = CompositeEval(self.target_sr)
-        # self.metrics = self._prepare_metrics()
-
-    # @staticmethod
-    # def _prepare_metrics():
-    #     metric = {}
-    #     if torch.cuda.is_available():
-    #         metric["WMOS"] = WMOSMetric()
-    #
-    #     metric["PESQ"] = PESQMetric()
-    #     metric["SI-SDR"] = SISDRMetric()
-    #     metric["SDR"] = SDRMetric()
-    #     metric["STOI"] = STOIMetric()
-    #
-    #     return metric
 
     def _load_audio(self, path: str):
         audio_tensor, sr = torchaudio.load(path)
@@ -102,17 +88,8 @@ class Inferencer:
         if noisy_path != clean_path:
             to_pad = clean_audio.shape[1] - gen_audio.shape[1]
             gen_audio = torch.nn.functional.pad(gen_audio, (0, to_pad))
-            # result[m] = self.metrics[m](gen_audio, clean_audio).item()
             metrics = self.composite_eval(gen_audio, clean_audio)
             result.update(metrics)
-
-        # for m in self.metrics.keys():
-        #     if m == "WMOS":
-        #         result[m] = self.metrics[m](gen_audio.to(self.device))
-        #     elif noisy_path != clean_path:
-        #         to_pad = clean_audio.shape[1] - gen_audio.shape[1]
-        #         gen_audio = torch.nn.functional.pad(gen_audio, (0, to_pad))
-        #         result[m] = self.metrics[m](gen_audio, clean_audio).item()
 
         if verbose:
             for key, val in result.items():

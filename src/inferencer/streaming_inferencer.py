@@ -74,16 +74,18 @@ class StreamingInferencer(Inferencer):
         clean_audio = self._load_audio(clean_path)
 
         result = {"file": noisy_path.split('/')[-1]}
-        for m in self.metrics.keys():
-            if m == "WMOS":
-                result[m] = self.metrics[m](gen_audio.to(self.device))
-            elif clean_path != noisy_path:
-                to_pad = clean_audio.shape[1] - gen_audio.shape[1]
-                gen_audio = torch.nn.functional.pad(gen_audio, (0, to_pad))
-                result[m] = self.metrics[m](gen_audio, clean_audio).item()
+        if self.wmos is not None:
+            result["wv-mos"] = self.wmos(gen_audio.to(self.device))
 
-            if verbose:
-                print(f"{m}: {result.get(m, 0.0):.3f}")
+        if noisy_path != clean_path:
+            to_pad = clean_audio.shape[1] - gen_audio.shape[1]
+            gen_audio = torch.nn.functional.pad(gen_audio, (0, to_pad))
+            metrics = self.composite_eval(gen_audio, clean_audio)
+            result.update(metrics)
+
+        if verbose:
+            for key, val in result.items():
+                print(f"{key}: {val}")
 
         return result
 
@@ -99,8 +101,6 @@ class StreamingInferencer(Inferencer):
 
         results = []
         metrics_score = {}
-        for m in self.metrics.keys():
-            metrics_score[m] = 0.
 
         for file_name in tqdm(files, desc="Process file"):
             noisy_path = str(noisy_dir / file_name)
@@ -108,8 +108,9 @@ class StreamingInferencer(Inferencer):
             out_path = str(out_dir / file_name)
             result = self.validate_streaming_audio(noisy_path, clean_path, out_path, mode, verbose=False)
 
-            for m in metrics_score.keys():
-                metrics_score[m] += result.get(m, 0.0)
+            for key, val in result.items():
+                if key != "file":
+                    metrics_score[key] = metrics_score.get(key, 0.0) + val
 
             results.append(result)
 

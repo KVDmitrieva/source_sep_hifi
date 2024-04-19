@@ -21,6 +21,10 @@ class CompositeEval:
         si_sdr = self.si_sdr(ref_wav, deg_wav).item()
         sdr = self.sdr(ref_wav, deg_wav).item()
         stoi = self.stoi(ref_wav, deg_wav).item()
+        pesq_raw = self.pesq(ref_wav, deg_wav).item()
+
+        ref_wav = ref_wav.squeeze().numpy()
+        deg_wav = deg_wav.squeeze().numpy()
 
         # returns [sig, bak, ovl]
         alpha = 0.95
@@ -44,9 +48,6 @@ class CompositeEval:
         # Compute the SSNR
         snr_mean, segsnr_mean = self.SSNR(ref_wav, deg_wav, 16000)
         segSNR = np.mean(segsnr_mean)
-
-        # Compute the PESQ
-        pesq_raw = self.pesq(ref_wav, deg_wav).item()
 
         def trim_mos(val):
             return min(max(val, 1), 5)
