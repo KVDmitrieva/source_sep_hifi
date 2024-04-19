@@ -10,7 +10,7 @@ import torchaudio
 
 import src.model as module_model
 from src.datasets.utils import MelSpectrogram, MelSpectrogramConfig
-from src.metric import *
+from src.metric import WMOSMetric, CompositeEval
 
 
 class Inferencer:
@@ -33,20 +33,23 @@ class Inferencer:
 
         self.mel_spec = MelSpectrogram(MelSpectrogramConfig())
         self.target_sr = config["preprocessing"]["sr"]
-        self.metrics = self._prepare_metrics()
 
-    @staticmethod
-    def _prepare_metrics():
-        metric = {}
-        if torch.cuda.is_available():
-            metric["WMOS"] = WMOSMetric()
+        self.wmos = WMOSMetric() if torch.cuda.is_available() else None
+        self.composite_eval = CompositeEval(self.target_sr)
+        # self.metrics = self._prepare_metrics()
 
-        metric["PESQ"] = PESQMetric()
-        metric["SI-SDR"] = SISDRMetric()
-        metric["SDR"] = SDRMetric()
-        metric["STOI"] = STOIMetric()
-
-        return metric
+    # @staticmethod
+    # def _prepare_metrics():
+    #     metric = {}
+    #     if torch.cuda.is_available():
+    #         metric["WMOS"] = WMOSMetric()
+    #
+    #     metric["PESQ"] = PESQMetric()
+    #     metric["SI-SDR"] = SISDRMetric()
+    #     metric["SDR"] = SDRMetric()
+    #     metric["STOI"] = STOIMetric()
+    #
+    #     return metric
 
     def _load_audio(self, path: str):
         audio_tensor, sr = torchaudio.load(path)
@@ -93,16 +96,27 @@ class Inferencer:
         clean_audio = self._load_audio(clean_path)
 
         result = {"file": noisy_path.split('/')[-1]}
-        for m in self.metrics.keys():
-            if m == "WMOS":
-                result[m] = self.metrics[m](gen_audio.to(self.device))
-            elif noisy_path != clean_path:
-                to_pad = clean_audio.shape[1] - gen_audio.shape[1]
-                gen_audio = torch.nn.functional.pad(gen_audio, (0, to_pad))
-                result[m] = self.metrics[m](gen_audio, clean_audio).item()
+        if self.wmos is not None:
+            result["wv-mos"] = self.wmos(gen_audio.to(self.device))
 
-            if verbose:
-                print(f"{m}: {result.get(m, 0.0):.3f}")
+        if noisy_path != clean_path:
+            to_pad = clean_audio.shape[1] - gen_audio.shape[1]
+            gen_audio = torch.nn.functional.pad(gen_audio, (0, to_pad))
+            # result[m] = self.metrics[m](gen_audio, clean_audio).item()
+            metrics = self.composite_eval(gen_audio, clean_audio)
+            result.update(metrics)
+
+        # for m in self.metrics.keys():
+        #     if m == "WMOS":
+        #         result[m] = self.metrics[m](gen_audio.to(self.device))
+        #     elif noisy_path != clean_path:
+        #         to_pad = clean_audio.shape[1] - gen_audio.shape[1]
+        #         gen_audio = torch.nn.functional.pad(gen_audio, (0, to_pad))
+        #         result[m] = self.metrics[m](gen_audio, clean_audio).item()
+
+        if verbose:
+            for key, val in result.items():
+                print(f"{key}: {val}")
 
         return result
 
@@ -118,8 +132,6 @@ class Inferencer:
 
         results = []
         metrics_score = {}
-        for m in self.metrics.keys():
-            metrics_score[m] = 0.
 
         for file_name in tqdm(files, desc="Process file"):
             noisy_path = str(noisy_dir / file_name)
@@ -127,8 +139,9 @@ class Inferencer:
             out_path = str(out_dir / file_name)
             result = self.validate_audio(noisy_path, clean_path, out_path, verbose=False)
 
-            for m in metrics_score.keys():
-                metrics_score[m] += result.get(m, 0.)
+            for key, val in result.items():
+                if key != "file":
+                    metrics_score[key] = metrics_score.get(key, 0.0) + val
 
             results.append(result)
 

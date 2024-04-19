@@ -3,7 +3,7 @@ from src.metric.sdr_metric import SDRMetric
 from src.metric.si_sdr_metric import SISDRMetric
 from src.metric.stoi_metric import STOIMetric
 from src.metric.wmos_metric import WMOSMetric
-
+from src.metric.composite_eval import CompositeEval
 
 __all__ = [
     "PESQMetric",
