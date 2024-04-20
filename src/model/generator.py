@@ -26,10 +26,12 @@ class Generator(BaseModel):
     def forward(self, mel, audio=None, **batch):
         mel = self.get_melspec(audio.clone())
 
+        mel_len = mel.shape[-1]
         pad_size = closest_power_of_two(mel.shape[-1]) - mel.shape[-1]
         mel = torch.nn.functional.pad(mel, (0, pad_size))
 
         spec_out = self.spec_unet(mel.unsqueeze(1))
+        spec_out = spec_out[..., :mel_len]
         spec_out = spec_out.squeeze(1)
         gen_out = self.generator(spec_out)
 
