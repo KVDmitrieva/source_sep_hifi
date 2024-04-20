@@ -6,6 +6,7 @@ from src.model.spectral import SpectralUNet, SpectralMaskNet
 from src.model.wave import WaveUNet
 from src.model.fms import FMSMaskNet
 from src.model.utils import fix_shapes_1d, closest_power_of_two
+from src.model.official_model import mel_spectrogram
 
 
 class Generator(BaseModel):
@@ -23,8 +24,11 @@ class Generator(BaseModel):
         self.spec_mask = torch.nn.Identity() if spectral_mask_params is None else mask_module(**spectral_mask_params)
 
     def forward(self, mel, audio=None, **batch):
+        mel = self.get_melspec(audio.clone())
+
         pad_size = closest_power_of_two(mel.shape[-1]) - mel.shape[-1]
         mel = torch.nn.functional.pad(mel, (0, pad_size))
+
         spec_out = self.spec_unet(mel.unsqueeze(1))
         spec_out = spec_out.squeeze(1)
         gen_out = self.generator(spec_out)
@@ -38,4 +42,11 @@ class Generator(BaseModel):
 
         return self.spec_mask(wave_out).unsqueeze(1)
 
+    @staticmethod
+    def get_melspec(x):
+        shape = x.shape
+        x = x.view(shape[0] * shape[1], shape[2])
+        x = mel_spectrogram(x, 1024, 80, 16000, 256, 1024, 0, 8000)
+        x = x.view(shape[0], -1, x.shape[-1])
+        return x
 
