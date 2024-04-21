@@ -14,7 +14,7 @@ from src.metric import WMOSMetric, CompositeEval
 
 
 class Inferencer:
-    def __init__(self, config):
+    def __init__(self, config, segment_len=None):
         self.logger = config.get_logger("test")
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -36,6 +36,8 @@ class Inferencer:
 
         self.wmos = WMOSMetric() if torch.cuda.is_available() else None
         self.composite_eval = CompositeEval(self.target_sr)
+
+        self.segment_len = segment_len
 
     def _load_audio(self, path: str):
         audio_tensor, sr = torchaudio.load(path)
