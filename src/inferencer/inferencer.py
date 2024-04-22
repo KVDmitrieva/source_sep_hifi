@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 
+import random
 import librosa.util
 from tqdm import tqdm
 
@@ -14,7 +15,7 @@ from src.metric import WMOSMetric, CompositeEval
 
 
 class Inferencer:
-    def __init__(self, config, segment_len=None):
+    def __init__(self, config, segment_size=None):
         self.logger = config.get_logger("test")
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -37,7 +38,8 @@ class Inferencer:
         self.wmos = WMOSMetric() if torch.cuda.is_available() else None
         self.composite_eval = CompositeEval(self.target_sr)
 
-        self.segment_len = segment_len
+        self.segment_size = segment_size
+        self.start_ind = 0
 
     def _load_audio(self, path: str):
         audio_tensor, sr = torchaudio.load(path)
@@ -49,6 +51,11 @@ class Inferencer:
 
     def denoise_audio(self, noisy_path: str, out_path: str = "result.wav"):
         noisy_audio = self._load_audio(noisy_path)
+
+        if self.segment_size is not None and noisy_audio.shape[-1] > self.segment_size:
+            ind = random.randint(0, noisy_audio.shape[-1] - self.segment_size)
+            noisy_audio = noisy_audio[:, ind:ind + self.segment_size]
+            self.start_ind = ind
 
         audio_len = noisy_audio.shape[-1]
         to_pad = self.closest_power_of_two(audio_len) - audio_len
@@ -82,6 +89,10 @@ class Inferencer:
     def validate_audio(self, noisy_path: str, clean_path: str, out_path: str = "result.wav", verbose=True):
         gen_audio = self.denoise_audio(noisy_path, out_path)
         clean_audio = self._load_audio(clean_path)
+
+        if self.segment_size is not None and clean_audio.shape[-1] > self.segment_size:
+            ind = self.start_ind
+            clean_audio = clean_audio[:, ind:ind + self.segment_size]
 
         result = {"file": noisy_path.split('/')[-1]}
         if self.wmos is not None:
