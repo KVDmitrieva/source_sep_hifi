@@ -43,7 +43,7 @@ if __name__ == "__main__":
         "-t", "--target_dir", default=None, type=str, help="Path to target audios",
     )
     args.add_argument(
-        "-s", "--segment_size", default=None, type=int, help="Max audio len"
+        "--segment_size", default=None, type=int, help="Max audio len"
     )
 
     args = args.parse_args()

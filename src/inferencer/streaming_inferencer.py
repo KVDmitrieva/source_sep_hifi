@@ -12,8 +12,8 @@ from src.datasets.streamer import FastFileStreamer
 
 
 class StreamingInferencer(Inferencer):
-    def __init__(self, config, chunk_size, window_delta):
-        super().__init__(config)
+    def __init__(self, config, chunk_size, window_delta, segment_size=None):
+        super().__init__(config, segment_size)
 
         # TODO: get chunk_size & window_delta from config
         self.chunk_size = chunk_size
@@ -26,6 +26,8 @@ class StreamingInferencer(Inferencer):
         assert mode in ["overlap_add", "overlap_add_sin", "overlap_nonintersec"], "invalid overlap mode"
 
         noisy_audio = self._load_audio(noisy_path)
+        noisy_audio = self._cut_audio(noisy_audio, new_ind=True)
+
         noisy_chunks, _ = self.streamer(noisy_audio.squeeze(0), None)
 
         outputs = []
@@ -72,6 +74,7 @@ class StreamingInferencer(Inferencer):
     def validate_streaming_audio(self, noisy_path: str, clean_path: str, out_path: str = "result.wav", mode: str = "overlap_add", verbose=True):
         gen_audio = self.denoise_streaming_audio(noisy_path, out_path, mode)
         clean_audio = self._load_audio(clean_path)
+        clean_audio = self._cut_audio(clean_audio, new_ind=False)
 
         result = {"file": noisy_path.split('/')[-1]}
         if self.wmos is not None:

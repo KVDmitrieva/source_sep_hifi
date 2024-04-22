@@ -49,13 +49,17 @@ class Inferencer:
 
         return audio_tensor
 
+    def _cut_audio(self, wav, new_ind=True):
+        if self.segment_size is not None and wav.shape[-1] > self.segment_size:
+            ind = random.randint(0, wav.shape[-1] - self.segment_size) if new_ind else self.start_ind
+            wav = wav[:, ind:ind + self.segment_size]
+            self.start_ind = ind
+
+        return wav
+
     def denoise_audio(self, noisy_path: str, out_path: str = "result.wav"):
         noisy_audio = self._load_audio(noisy_path)
-
-        if self.segment_size is not None and noisy_audio.shape[-1] > self.segment_size:
-            ind = random.randint(0, noisy_audio.shape[-1] - self.segment_size)
-            noisy_audio = noisy_audio[:, ind:ind + self.segment_size]
-            self.start_ind = ind
+        noisy_audio = self._cut_audio(noisy_audio, new_ind=True)
 
         audio_len = noisy_audio.shape[-1]
         to_pad = self.closest_power_of_two(audio_len) - audio_len
@@ -89,6 +93,7 @@ class Inferencer:
     def validate_audio(self, noisy_path: str, clean_path: str, out_path: str = "result.wav", verbose=True):
         gen_audio = self.denoise_audio(noisy_path, out_path)
         clean_audio = self._load_audio(clean_path)
+        clean_audio = self._cut_audio(clean_audio, new_ind=False)
 
         if self.segment_size is not None and clean_audio.shape[-1] > self.segment_size:
             ind = self.start_ind
