@@ -3,7 +3,8 @@ import torch.nn.functional as F
 
 
 def init_weights(module, mean=0.0, std=0.01):
-    if isinstance(module, nn.Conv1d) or isinstance(module, nn.ConvTranspose1d) or isinstance(module, nn.Conv2d):
+    class_name = module.__class__.__name__
+    if class_name.find("Conv") != -1:
         module.weight.data.normal_(mean=mean, std=std)
 
 
