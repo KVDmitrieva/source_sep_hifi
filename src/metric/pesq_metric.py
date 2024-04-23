@@ -1,4 +1,4 @@
-from torch import Tensor
+from torch import Tensor, tensor
 from torchmetrics.audio import PerceptualEvaluationSpeechQuality
 
 from src.metric.base_metric import BaseMetric
@@ -15,4 +15,4 @@ class PESQMetric(BaseMetric):
         try:
             return self.pesq(generator_audio, target_audio)
         except:
-            return 1
+            return tensor(1)
