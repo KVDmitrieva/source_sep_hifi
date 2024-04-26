@@ -4,7 +4,7 @@ import torch
 from numpy import inf
 
 from src.model.base_model import BaseModel
-from src.logger import get_visualizer
+from src.logger import WanDBWriter
 
 
 class BaseTrainer:
@@ -54,9 +54,7 @@ class BaseTrainer:
         self.checkpoint_dir = config.save_dir
 
         # setup visualization writer instance
-        self.writer = get_visualizer(
-            config, self.logger, cfg_trainer["visualize"]
-        )
+        self.writer = WanDBWriter(config, self.logger)
 
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
@@ -212,3 +210,15 @@ class BaseTrainer:
         self.logger.info(
             "Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch)
         )
+
+        if self.config["trainer"].get("freeze_generator", False):
+            for p in self.generator.spec_unet.parameters():
+                p.requires_grad_(False)
+            for p in self.generator.generator.parameters():
+                p.requires_grad_(False)
+            self.logger.info("Generator parameters frozen")
+
+        if self.config["trainer"].get("freeze_mask", False):
+            for p in self.generator.spec_mask.parameters():
+                p.requires_grad_(False)   
+            self.logger.info("MaskNet parameters frozen")   

@@ -23,17 +23,11 @@ class Trainer(BaseTrainer):
                          dis_optimizer, gen_lr_scheduler, dis_lr_scheduler, config, device)
         self.skip_oom = skip_oom
         self.config = config
-        self.train_dataloader = dataloaders["train"]
-        if len_epoch is None:
-            # epoch-based training
-            self.len_epoch = len(self.train_dataloader)
-        else:
-            # iteration-based training
-            self.train_dataloader = inf_loop(self.train_dataloader)
-            self.len_epoch = len_epoch
-        self.evaluation_dataloaders = {k: v for k, v in dataloaders.items() if k != "train"}
+        self._setup_loaders(dataloaders, len_epoch)
+
         self.log_step = config["trainer"].get("log_step", 50)
         self.log_media = config["trainer"].get("log_media", 1)
+
         self.train_metrics = MetricTracker(
             "discriminator_loss", "generator_loss", "adv_loss", "mel_loss", "feature_loss",
             "gen grad norm", "dis grad norm", *[m.name for m in self.metrics], writer=self.writer
@@ -45,22 +39,6 @@ class Trainer(BaseTrainer):
 
         self.mel_spec = MelSpectrogram(MelSpectrogramConfig())
         self.mel_spec = self.mel_spec.to(self.device)
-
-    @staticmethod
-    def move_batch_to_device(batch, device: torch.device):
-        """
-        Move all necessary tensors to the GPU
-        """
-        for tensor_for_gpu in ["mel", "audio", "target_audio", "target_mel"]:
-            batch[tensor_for_gpu] = batch[tensor_for_gpu].to(device)
-        return batch
-
-    def _clip_grad_norm(self, model_type="gen"):
-        model = self.generator if model_type == "gen" else self.discriminator
-        if self.config["trainer"].get("grad_norm_clip", None) is not None:
-            clip_grad_norm_(
-                model.parameters(), self.config["trainer"]["grad_norm_clip"]
-            )
 
     def _train_epoch(self, epoch):
         """
@@ -78,14 +56,7 @@ class Trainer(BaseTrainer):
                 batch = self.process_batch(batch, is_train=True, metrics=self.train_metrics)
             except RuntimeError as e:
                 if "out of memory" in str(e) and self.skip_oom:
-                    self.logger.warning("OOM on batch. Skipping batch.")
-                    for p in self.generator.parameters():
-                        if p.grad is not None:
-                            del p.grad  # free some memory
-                    for p in self.discriminator.parameters():
-                        if p.grad is not None:
-                            del p.grad  # free some memory
-                    torch.cuda.empty_cache()
+                    self._free_memory()
                     continue
                 else:
                     raise e
@@ -100,18 +71,10 @@ class Trainer(BaseTrainer):
                         batch["discriminator_loss"].item()
                     )
                 )
-                self.writer.add_scalar(
-                    "gen learning rate", self.gen_lr_scheduler.get_last_lr()[0]
-                )
-                self.writer.add_scalar(
-                    "dis learning rate", self.dis_lr_scheduler.get_last_lr()[0]
-                )
-
-                # self._log_triplet_audio(batch)
-                # self._log_triplet_spectrogram(batch)
+                self.writer.add_scalar("gen learning rate", self.gen_lr_scheduler.get_last_lr()[0])
+                self.writer.add_scalar("dis learning rate", self.dis_lr_scheduler.get_last_lr()[0])
                 self._log_scalars(self.train_metrics)
-                # we don't want to reset train metrics at the start of every epoch
-                # because we are interested in recent train metrics
+
                 last_train_metrics = self.train_metrics.result()
                 self.train_metrics.reset()
             if batch_idx >= self.len_epoch:
@@ -216,6 +179,53 @@ class Trainer(BaseTrainer):
             total = self.len_epoch
         return base.format(current, total, 100.0 * current / total)
 
+    @torch.no_grad()
+    def get_grad_norm(self, model_type="gen", norm_type=2):
+        model = self.generator if model_type == "gen" else self.discriminator
+        parameters = model.parameters()
+        if isinstance(parameters, torch.Tensor):
+            parameters = [parameters]
+
+        parameters = [p for p in parameters if p.grad is not None]
+        parameters_stack = torch.stack([torch.norm(p.grad.detach(), norm_type).cpu() for p in parameters])
+        return torch.norm(parameters_stack, norm_type).item()
+    
+    @staticmethod
+    def move_batch_to_device(batch, device: torch.device):
+        """
+        Move all necessary tensors to the GPU
+        """
+        for tensor_for_gpu in ["mel", "audio", "target_audio", "target_mel"]:
+            batch[tensor_for_gpu] = batch[tensor_for_gpu].to(device)
+        return batch
+
+    def _clip_grad_norm(self, model_type="gen"):
+        model = self.generator if model_type == "gen" else self.discriminator
+        if self.config["trainer"].get("grad_norm_clip", None) is not None:
+            clip_grad_norm_(model.parameters(), self.config["trainer"]["grad_norm_clip"])
+    
+    def _free_memory(self):
+        self.logger.warning("OOM on batch. Skipping batch.")
+        for p in self.generator.parameters():
+            if p.grad is not None:
+                del p.grad  # free some memory
+        for p in self.discriminator.parameters():
+            if p.grad is not None:
+                del p.grad  # free some memory
+        torch.cuda.empty_cache()
+
+    def _setup_loaders(self, dataloaders, len_epoch):
+        use_inf_loop = len_epoch is not None
+        self.train_dataloader = inf_loop(dataloaders["train"]) if use_inf_loop else dataloaders["train"]
+        self.len_epoch = len_epoch if use_inf_loop else len(self.train_dataloader)
+        self.evaluation_dataloaders = {k: v for k, v in dataloaders.items() if k != "train"}
+
+    def _log_scalars(self, metric_tracker: MetricTracker):
+        if self.writer is None:
+            return
+        for metric_name in metric_tracker.keys():
+            self.writer.add_scalar(f"{metric_name}", metric_tracker.avg(metric_name))
+
     def _log_spectrogram(self, spectrogram_batch, name="spectrogram"):
         spectrogram = random.choice(spectrogram_batch.detach().cpu()).squeeze(0)
         image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram))
@@ -236,24 +246,3 @@ class Trainer(BaseTrainer):
     def _log_audio(self, audio_batch, name="audio"):
         audio = random.choice(audio_batch.detach().cpu())
         self.writer.add_audio(name, audio, self.config["preprocessing"]["sr"])
-
-    @torch.no_grad()
-    def get_grad_norm(self, model_type="gen", norm_type=2):
-        model = self.generator if model_type == "gen" else self.discriminator
-        parameters = model.parameters()
-        if isinstance(parameters, torch.Tensor):
-            parameters = [parameters]
-        parameters = [p for p in parameters if p.grad is not None]
-        total_norm = torch.norm(
-            torch.stack(
-                [torch.norm(p.grad.detach(), norm_type).cpu() for p in parameters]
-            ),
-            norm_type,
-        )
-        return total_norm.item()
-
-    def _log_scalars(self, metric_tracker: MetricTracker):
-        if self.writer is None:
-            return
-        for metric_name in metric_tracker.keys():
-            self.writer.add_scalar(f"{metric_name}", metric_tracker.avg(metric_name))

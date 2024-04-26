@@ -115,3 +115,71 @@ class StreamingTrainer(Trainer):
         audio = torch.cat((audio_without_last_elems, last_elements), dim=-1)
         return audio
 
+
+class ContextStreamingTrainer(StreamingTrainer):
+    """
+    Trainer class
+    """
+
+    def __init__(self, generator, discriminator, gen_criterion, dis_criterion, metrics, gen_optimizer, dis_optimizer,
+                 config, device, dataloaders, gen_lr_scheduler=None, dis_lr_scheduler=None, len_epoch=None, skip_oom=True):
+        super().__init__(generator, discriminator, gen_criterion, dis_criterion, metrics, gen_optimizer,
+                         dis_optimizer, config, device, dataloaders, gen_lr_scheduler, dis_lr_scheduler, len_epoch, skip_oom)
+
+    def process_batch(self, batch, is_train: bool, metrics: MetricTracker):
+        chunks, _ = self.streamer(batch["audio"].cpu().squeeze(1).numpy())
+        bs, chunk_num, chunk_size = chunks.shape
+
+        batch["chunked_audio"] = torch.from_numpy(chunks.reshape(-1, chunks.shape[-1])).to(self.device)
+        batch["chunked_mel"] = self.mel_spec(batch["chunked_audio"])
+        batch["chunked_audio"] = batch["chunked_audio"].unsqueeze(1)
+
+        batch = self.move_batch_to_device(batch, self.device)
+
+        # generator_audio
+        gen_chunks, _ = self.generator(batch["chunked_mel"], batch["chunked_audio"], chunk_num=chunk_num)
+        gen_chunks = gen_chunks.reshape(bs, chunk_num, chunk_size)
+        batch["generator_audio"] = self.overlap_add_batched(
+            gen_chunks, self.streamer.window_delta, self.streamer.chunk_size
+        ).unsqueeze(1)
+
+        if is_train:
+            self.dis_optimizer.zero_grad()
+
+        # real_discriminator_out, real_feature_map
+        batch.update(self.discriminator(batch["target_audio"]))
+
+        # gen_discriminator_out, gen_feature_map
+        batch.update(self.discriminator(batch["generator_audio"].detach(), prefix="gen"))
+
+        dis_loss = self.dis_criterion(**batch)
+        batch.update(dis_loss)
+
+        if is_train:
+            batch["discriminator_loss"].backward()
+            self._clip_grad_norm(model_type="dis")
+            self.dis_optimizer.step()
+
+        if is_train:
+            self.gen_optimizer.zero_grad()
+
+        batch.update(self.discriminator(batch["target_audio"]))
+        batch.update(self.discriminator(batch["generator_audio"], prefix="gen"))
+
+        batch["gen_mel"] = self.mel_spec(batch["generator_audio"]).squeeze(1)
+        gen_loss = self.gen_criterion(**batch)
+        batch.update(gen_loss)
+
+        if is_train:
+            gen_loss["generator_loss"].backward()
+            self._clip_grad_norm(model_type="gen")
+            self.gen_optimizer.step()
+
+        for key in dis_loss.keys():
+            metrics.update(key, batch[key].item())
+        for key in gen_loss.keys():
+            metrics.update(key, batch[key].item())
+
+        for met in self.metrics:
+            metrics.update(met.name, met(**batch))
+        return batch
