@@ -170,7 +170,7 @@ class BaseTrainer:
         """
         Resume from saved checkpoints
 
-        :param resume_path: Checkpoint noisy_path to be resumed
+        :param resume_path: Checkpoint path to be resumed
         """
         gen_resume_path = str(resume_path)
 

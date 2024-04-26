@@ -19,7 +19,7 @@ class ConfigParser:
         initializations of modules, checkpoint saving and logging module.
         :param config: Dict containing configurations, hyperparameters for training.
                        contents of `config.json` file for example.
-        :param resume: String, noisy_path to the checkpoint being loaded.
+        :param resume: String, path to the checkpoint being loaded.
         :param modification: Dict {keychain: value}, specifying position values to be replaced
                              from config dict.
         :param run_id: Unique Identifier for training processes.
