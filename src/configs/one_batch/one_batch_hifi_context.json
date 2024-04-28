@@ -286,6 +286,8 @@
     "monitor": "min val_loss",
     "early_stop": 100,
     "visualize": "wandb",
-    "wandb_project": "hifi_plusplus"
+    "wandb_project": "hifi_plusplus",
+    "freeze_generator": true,
+    "freeze_mask": true
   }
 }
