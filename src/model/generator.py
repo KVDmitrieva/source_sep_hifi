@@ -64,9 +64,9 @@ class ContextGenerator(Generator):
 
         if context is None:
             bs, _, chunk_size = context_out.shape
-            gen_context = context_out.reshape(bs, chunk_num, chunk_size)[:, :-1, :]
-            cold_start = torch.zeros(bs, 1, chunk_size, device=audio.device)
-            context = torch.cat([cold_start, gen_context], dim=0).reshape(-1, 1, chunk_size)
+            gen_context = context_out.reshape(-1, chunk_num, chunk_size)[:, :-1, :]
+            cold_start = torch.zeros(-1, 1, chunk_size, device=audio.device)
+            context = torch.cat([cold_start, gen_context], dim=0).reshape(bs, 1, chunk_size)
 
         assert gen_out.shape == audio.shape, "Shape mismatch (gen, audio)"
         assert gen_out.shape == context.shape, "Shape mismatch (gen, context)"

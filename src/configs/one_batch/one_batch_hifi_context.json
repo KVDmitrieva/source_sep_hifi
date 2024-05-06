@@ -182,7 +182,7 @@
           "type": "VCTKDataset",
           "args": {
             "part": "testset",
-            "data_dir": "/kaggle/input/vctk-data",
+            "data_dir": "./data",
             "max_audio_length": 32768,
             "limit": 24
           }
@@ -197,7 +197,7 @@
           "type": "VCTKDataset",
           "args": {
             "part": "testset",
-            "data_dir": "/kaggle/input/vctk-data",
+            "data_dir": "./data",
             "max_audio_length": 32768,
             "limit": 24
           }
@@ -278,7 +278,6 @@
     "chunk_size": 4096,
     "window_delta": 2048
   },
-  "from_pretrained": "checkpoints/hifi_plusplus/generator.pth",
   "trainer": {
     "epochs": 2000,
     "save_dir": "saved/",
@@ -289,6 +288,7 @@
     "visualize": "wandb",
     "wandb_project": "hifi_plusplus",
     "freeze_generator": true,
-    "freeze_mask": true
+    "freeze_mask": true,
+    "from_pretrained": "checkpoints/hifi_plusplus/generator.pth"
   }
 }
