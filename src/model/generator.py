@@ -60,7 +60,7 @@ class ContextGenerator(Generator):
         gen_out = self.generator(spec_out)
 
         gen_out, audio = fix_shapes_1d(gen_out, audio)
-        context_out = gen_out.copy().detach()
+        context_out = gen_out.detach()
 
         if context is None:
             bs, _, chunk_size = context_out.shape

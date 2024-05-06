@@ -59,6 +59,9 @@ class BaseTrainer:
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
 
+        if config.from_pretrained is not None:
+            self._from_pretrained(config.from_pretrained)
+
     @abstractmethod
     def _train_epoch(self, epoch):
         """
@@ -210,6 +213,51 @@ class BaseTrainer:
         self.logger.info(
             "Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch)
         )
+
+        if self.config["trainer"].get("freeze_generator", False):
+            for p in self.generator.spec_unet.parameters():
+                p.requires_grad_(False)
+            for p in self.generator.generator.parameters():
+                p.requires_grad_(False)
+            self.logger.info("Generator parameters frozen")
+
+        if self.config["trainer"].get("freeze_mask", False):
+            for p in self.generator.spec_mask.parameters():
+                p.requires_grad_(False)   
+            self.logger.info("MaskNet parameters frozen")   
+
+    def _from_pretrained(self, resume_path):
+        """
+        Resume from saved checkpoints
+
+        :param resume_path: Checkpoint path to be resumed
+        """
+        gen_resume_path = str(resume_path)
+
+        dis_resume_path = '/'.join(gen_resume_path.split('/')[:-1]) + "/discriminator.pth"
+
+        self.logger.info("Loading generator checkpoint: {} ...".format(gen_resume_path))
+        gen_checkpoint = torch.load(gen_resume_path, self.device)
+
+        self.logger.info("Loading discriminator checkpoint: {} ...".format(dis_resume_path))
+        dis_checkpoint = torch.load(dis_resume_path, self.device)
+
+        self.start_epoch = gen_checkpoint["epoch"] + 1
+        self.mnt_best = gen_checkpoint["monitor_best"]
+
+        # load architecture params from checkpoint.
+        if gen_checkpoint["config"]["generator"] != self.config["generator"] or gen_checkpoint["config"]["discriminator"] != self.config["discriminator"]:
+            self.logger.warning(
+                "Warning: Architecture configuration given in config file is different from that "
+                "of checkpoint. This may yield an exception while state_dict is being loaded."
+            )
+
+        if self.config["trainer"].get("freeze_generator", False):
+            gen_checkpoint["state_dict"].pop("wave_unet.prolog.weight")
+            gen_checkpoint["state_dict"].pop("wave_unet.prolog.bias")
+
+        self.generator.load_state_dict(gen_checkpoint["state_dict"], strict=False)
+        self.discriminator.load_state_dict(dis_checkpoint["state_dict"])
 
         if self.config["trainer"].get("freeze_generator", False):
             for p in self.generator.spec_unet.parameters():

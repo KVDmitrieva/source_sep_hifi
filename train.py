@@ -34,8 +34,8 @@ def init_model(config, device, prefix="gen"):
     loss_module = config.init_obj(config[f"{prefix}_loss"], module_loss).to(device)
 
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    optimizer = config.init_obj(config[f"{prefix}_loss"], torch.optim, trainable_params)
-    lr_scheduler = config.init_obj(config[f"{prefix}_loss"], torch.optim.lr_scheduler, optimizer)
+    optimizer = config.init_obj(config[f"{prefix}_optimizer"], torch.optim, trainable_params)
+    lr_scheduler = config.init_obj(config[f"{prefix}_lr_scheduler"], torch.optim.lr_scheduler, optimizer)
 
     return model, loss_module, optimizer, lr_scheduler
 

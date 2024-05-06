@@ -27,7 +27,7 @@
         ],
         "scale": 2,
         "bottleneck_width": 64,
-        "block_depth": 5
+        "block_depth": 4
       },
       "generator_params": {
         "prolog_params": {
@@ -278,6 +278,7 @@
     "chunk_size": 4096,
     "window_delta": 2048
   },
+  "from_pretrained": "checkpoints/hifi_plusplus/generator.pth",
   "trainer": {
     "epochs": 2000,
     "save_dir": "saved/",
