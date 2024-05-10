@@ -11,10 +11,11 @@ from src.model.utils import fix_shapes_1d, closest_power_of_two
 
 class Generator(BaseModel):
     def __init__(self, generator_params, spectral_unet_params=None, wave_unet_params=None,
-                 spectral_mask_params=None, add_spectral=False, concat_audio=True, use_fms=False):
+                 spectral_mask_params=None, add_spectral=False, concat_audio=True, use_fms=False, context_full=False):
         super().__init__()
         self.add_spectral = add_spectral
         self.concat_audio = concat_audio
+        self.context_full = context_full
 
         self.spec_unet = torch.nn.Identity() if spectral_unet_params is None else SpectralUNet(**spectral_unet_params)
         self.generator = HiFiGenerator(**generator_params)
@@ -49,10 +50,9 @@ class Generator(BaseModel):
 
 class ContextGenerator(Generator):
     def __init__(self, generator_params, spectral_unet_params=None, wave_unet_params=None,
-                 spectral_mask_params=None, add_spectral=False, concat_audio=True, use_fms=False):
+                 spectral_mask_params=None, add_spectral=False, concat_audio=True, use_fms=False, context_full=False):
         super().__init__(generator_params, spectral_unet_params, wave_unet_params, 
-                         spectral_mask_params, add_spectral, concat_audio, use_fms)
-
+                         spectral_mask_params, add_spectral, concat_audio, use_fms, context_full)
 
     def forward(self, mel: Tensor, audio: Tensor, context: Tensor = None, chunk_num: int = 1, **batch):
         # audio: batch * chunk_num x 1 x chunk_size
@@ -63,10 +63,7 @@ class ContextGenerator(Generator):
         context_out = gen_out.detach()
 
         if context is None:
-            bs, _, chunk_size = context_out.shape
-            gen_context = context_out.reshape(-1, chunk_num, chunk_size)[:, :-1, :]
-            cold_start = torch.zeros(bs // chunk_num, 1, chunk_size, device=audio.device)
-            context = torch.cat([cold_start, gen_context], dim=1).reshape(bs, 1, chunk_size)
+            context = self._get_context(context_out, audio, chunk_num)
 
         assert gen_out.shape == audio.shape, "Shape mismatch (gen, audio)"
         assert gen_out.shape == context.shape, "Shape mismatch (gen, context)"
@@ -78,3 +75,17 @@ class ContextGenerator(Generator):
             return self.spec_mask(wave_out, spec_out).unsqueeze(1), context_out
 
         return self.spec_mask(wave_out).unsqueeze(1), context_out
+    
+
+    def _get_context(self, context_out, audio, chunk_num):
+        if self.context_full:
+            cold_start = torch.zeros_like(context_out, device=context_out.device)
+            context = torch.cat([context_out, audio, cold_start], dim=1)
+            wave_out = self.wave_unet(context).squeeze(1)
+            context_out = self.spec_mask(wave_out).unsqueeze(1).detach()
+
+        bs, _, chunk_size = context_out.shape
+        gen_context = context_out.reshape(-1, chunk_num, chunk_size)[:, :-1, :]
+        cold_start = torch.zeros(bs // chunk_num, 1, chunk_size, device=context_out.device)
+        context = torch.cat([cold_start, gen_context], dim=1).reshape(bs, 1, chunk_size)
+        return context
