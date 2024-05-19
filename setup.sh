@@ -4,7 +4,7 @@ pip install -r requirements.txt
 echo "Download checkpoints"
 mkdir checkpoints
 
-gdown --fuzzy "https://drive.google.com/file/d/1siM13isqK4HZTAziWv631GPAbmGaXgd6/view?usp=drive_link" -O checkpoints.zip
+gdown --fuzzy "https://drive.google.com/file/d/1Qz5U1S3HiEp7XiM5dOYunSVZkcujAf7Z/view?usp=drive_link" -O checkpoints.zip
 unzip -q checkpoints.zip
 
 # checkpoints
