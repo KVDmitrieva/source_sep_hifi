@@ -48,6 +48,24 @@ class Generator(BaseModel):
         return spec_out
     
 
+class WaveGenerator(BaseModel):
+    def __init__(self, wave_unet_params=None, spectral_mask_params=None, use_fms=False, use_noise=False):
+        super().__init__()
+        self.use_noise = use_noise
+        self.wave_unet = WaveUNet(**wave_unet_params)
+
+        mask_module = FMSMaskNet if use_fms else SpectralMaskNet
+        self.spec_mask = mask_module(**spectral_mask_params)
+
+    def forward(self, mel, audio=None, **batch):
+        if self.use_noise:
+            noise = torch.zeros_like(audio, device=audio.device)
+            audio = torch.cat([noise, audio], dim=1)
+        
+        wave_out = self.wave_unet(audio).squeeze(1)
+        return self.spec_mask(wave_out).unsqueeze(1)
+
+
 class ContextGenerator(Generator):
     def __init__(self, generator_params, spectral_unet_params=None, wave_unet_params=None,
                  spectral_mask_params=None, add_spectral=False, concat_audio=True, use_fms=False, context_full=False):
