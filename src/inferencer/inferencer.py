@@ -150,6 +150,9 @@ class Inferencer:
     def validate_json(self, json_path: str, out_dir: str = "output", verbose=True):
         assert Path(json_path).exists(), "invalid noisy dir"
 
+        if not Path(out_dir).exists():
+            Path(out_dir).mkdir(exist_ok=True, parents=True)
+
         with open("index.json", "r") as f:
             index = json.load(f)
 
