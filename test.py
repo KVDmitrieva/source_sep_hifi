@@ -23,28 +23,14 @@ random.seed(SEED)
 
 if __name__ == "__main__":
     args = argparse.ArgumentParser(description="PyTorch Template")
-    args.add_argument(
-        "-c", "--config", default=None, type=str, help="config file noisy_path (default: None)",
-    )
-    args.add_argument(
-        "-r", "--resume", default=str(DEFAULT_CHECKPOINT_PATH.absolute().resolve()),
-        type=str, help="noisy_path to latest checkpoint (default: None)",
-    )
-    args.add_argument(
-        "-d", "--device", default=None, type=str, help="indices of GPUs to enable (default: all)",
-    )
-    args.add_argument(
-        "-o", "--output", default="output", type=str, help="Dir to write results",
-    )
-    args.add_argument(
-        "-n", "--noisy_dir", default=None, type=str, help="Path to noisy audios",
-    )
-    args.add_argument(
-        "-t", "--target_dir", default=None, type=str, help="Path to target audios",
-    )
-    args.add_argument(
-        "--segment_size", default=None, type=int, help="Max audio len"
-    )
+    args.add_argument("-c", "--config", default=None, type=str, help="config file noisy_path (default: None)",)
+    args.add_argument("-r", "--resume", default=str(DEFAULT_CHECKPOINT_PATH.absolute().resolve()), type=str, help="noisy_path to latest checkpoint (default: None)")
+    args.add_argument("-d", "--device", default=None, type=str, help="indices of GPUs to enable (default: all)",)
+    args.add_argument("-o", "--output", default="output", type=str, help="Dir to write results")
+    args.add_argument("-n", "--noisy_dir", default=None, type=str, help="Path to noisy audios")
+    args.add_argument("-t", "--target_dir", default=None, type=str, help="Path to target audios")
+    args.add_argument("-j", "--json_path", default=None, type=str, help="Path to json with audio paths")
+    args.add_argument("--segment_size", default=None, type=int, help="Max audio len")
 
     args = args.parse_args()
 
@@ -60,8 +46,9 @@ if __name__ == "__main__":
             config.config.update(json.load(f))
 
     inferencer = Inferencer(config, args.segment_size)
-
-    if args.target_dir is None:
+    if args.json_path is not None:
+        inferencer.validate_json(args.json_path, args.output)
+    elif args.target_dir is None:
         inferencer.denoise_dir(args.noisy_dir, args.output)
     else:
         inferencer.validate_dir(args.noisy_dir, args.target_dir, args.output, )

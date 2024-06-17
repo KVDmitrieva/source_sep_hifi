@@ -147,6 +147,34 @@ class Inferencer:
         with (out_dir / "result.txt").open("w") as f:
             json.dump(results, f, indent=2)
 
+    def validate_json(self, json_path: str, out_dir: str = "output", verbose=True):
+        assert Path(json_path).exists(), "invalid noisy dir"
+
+        with open("index.json", "r") as f:
+            index = json.load(f)
+
+        results = []
+        metrics_score = {}
+
+        for pairs in tqdm(index, desc="Process file"):
+            noisy_path = pairs["noisy"]
+            clean_path = pairs["clean"]
+            out_path = f'{out_dir}/{pairs["out_name"]}'
+            result = self.validate_audio(noisy_path, clean_path, out_path, verbose=False)
+
+            for key, val in result.items():
+                if key != "file":
+                    metrics_score[key] = metrics_score.get(key, 0.0) + val
+
+            results.append(result)
+
+        if verbose:
+            for key, val in metrics_score.items():
+                print(f"{key}: {val / len(pairs):.3f}")
+
+        with (out_dir / "result.txt").open("w") as f:
+            json.dump(results, f, indent=2)
+
     @staticmethod
     def closest_power_of_two(n):
         return 1 << (n - 1).bit_length()
