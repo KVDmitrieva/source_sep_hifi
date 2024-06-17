@@ -175,7 +175,7 @@ class Inferencer:
             for key, val in metrics_score.items():
                 print(f"{key}: {val / len(pairs):.3f}")
 
-        with (out_dir / "result.txt").open("w") as f:
+        with open(f"{out_dir}/result.txt", "w") as f:
             json.dump(results, f, indent=2)
 
     @staticmethod
