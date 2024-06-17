@@ -264,9 +264,9 @@
       "window_delta": 2048
     },
     "trainer": {
-      "epochs": 20,
+      "epochs": 25,
       "save_dir": "saved/",
-      "save_period": 4,
+      "save_period": 5,
       "verbosity": 2,
       "monitor": "min val_loss",
       "early_stop": 100,
