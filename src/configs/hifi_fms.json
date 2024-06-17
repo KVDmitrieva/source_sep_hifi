@@ -65,13 +65,13 @@
         ],
         "epilog_params": {
           "in_channels": 8,
-          "out_channels": 1,
+          "out_channels": 4,
           "kernel_size": 7,
           "padding": "same"
         }
       },
       "wave_unet_params": {
-        "in_channels": 2,
+        "in_channels": 5,
         "out_channels": 1,
         "width": [
           10,
@@ -256,9 +256,9 @@
     "window_delta": 2048
   },
   "trainer": {
-    "epochs": 60,
+    "epochs": 120,
     "save_dir": "saved/",
-    "save_period": 5,
+    "save_period": 2,
     "verbosity": 2,
     "monitor": "min val_loss",
     "early_stop": 100,
