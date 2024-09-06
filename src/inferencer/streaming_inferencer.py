@@ -1,9 +1,3 @@
-import json
-import os
-from pathlib import Path
-
-from tqdm import tqdm
-
 import torch
 import torchaudio
 
@@ -44,9 +38,6 @@ class StreamingInferencer(Inferencer):
 
             to_pad = chunk.shape[-1] - gen_chunk.shape[-1]
             gen_chunk = torch.nn.functional.pad(gen_chunk, (0, to_pad))
-            # if normalize_chunk:
-            #     gen_chunk = gen_chunk / torch.amax(torch.abs(gen_chunk))
-
             outputs.append(gen_chunk.cpu().squeeze())
 
         gen_audio = self.overlap(outputs, self.window_delta, self.chunk_size)
