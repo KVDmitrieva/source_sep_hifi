@@ -8,11 +8,9 @@ from pathlib import Path
 from typing import List
 
 import torchaudio
-from torch.nn.utils.rnn import pad_sequence
 from speechbrain.utils.data_utils import download_file
 from tqdm import tqdm
 
-from src.datasets.utils import MelSpectrogramConfig as config
 from src.datasets.base_dataset import BaseDataset
 from src.utils import ROOT_PATH
 
@@ -46,46 +44,6 @@ class VCTKDataset(BaseDataset):
             index = self._get_or_load_index(part)
 
         super().__init__(index, *args, **kwargs)
-
-    def __getitem__(self, ind):
-        data_dict = self._index[ind]
-
-        noisy_audio = self.load_audio(data_dict["noisy_path"])
-        clean_audio = self.load_audio(data_dict["clean_path"])
-
-        if self.max_len is not None and noisy_audio.shape[-1] > self.max_len:
-            ind = random.randint(0, noisy_audio.shape[-1] - self.max_len)
-            noisy_audio = noisy_audio[:, ind:ind + self.max_len]
-            clean_audio = clean_audio[:, ind:ind + self.max_len]
-        noisy_audio, noisy_spec = self.process_wave(noisy_audio)
-        clean_audio, clean_spec = self.process_wave(clean_audio)
-        return {
-            "audio": noisy_audio,
-            "spectrogram": noisy_spec,
-            "target_audio": clean_audio,
-            "target_spectrogram": clean_spec
-        }
-
-    @staticmethod
-    def collate_fn(dataset_items: List[dict]):
-        """
-        Collate and pad fields in dataset items
-        """
-        spectrogram, audio = [], []
-        target_spec, target_audio = [], []
-
-        for item in dataset_items:
-            audio.append(item["audio"].T)
-            target_audio.append(item["target_audio"].T)
-            spectrogram.append(item["spectrogram"].squeeze(0).T)
-            target_spec.append(item["target_spectrogram"].squeeze(0).T)
-
-        return {
-            "audio": pad_sequence(audio, batch_first=True).transpose(1, 2),
-            "target_audio": pad_sequence(target_audio, batch_first=True).transpose(1, 2),
-            "mel": pad_sequence(spectrogram, batch_first=True, padding_value=config.pad_value).transpose(1, 2),
-            "target_mel": pad_sequence(target_spec, batch_first=True, padding_value=config.pad_value).transpose(1, 2)
-        }
 
     def _load_part(self, part):
         arch_path = self._index_dir / f"{part}.zip"

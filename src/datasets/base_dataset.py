@@ -6,28 +6,21 @@ import torch
 import torchaudio
 from torch import Tensor
 from torch.utils.data import Dataset
+from torch.nn.utils.rnn import pad_sequence
 
 from src.utils.parse_config import ConfigParser
-from src.datasets.utils import MelSpectrogram, MelSpectrogramConfig
+from src.datasets.utils import MelSpectrogram, MelSpectrogramConfig as config
 
 logger = logging.getLogger(__name__)
 
 
 class BaseDataset(Dataset):
-    def __init__(
-            self,
-            index,
-            config_parser: ConfigParser,
-            wave_augs=None,
-            spec_augs=None,
-            limit=None,
-            max_audio_length=None
-    ):
+    def __init__(self, index, config_parser: ConfigParser, wave_augs=None, spec_augs=None, limit=None, max_audio_length=None):
         self.config_parser = config_parser
         self.wave_augs = wave_augs
         self.spec_augs = spec_augs
         self.log_spec = config_parser["preprocessing"]["log_spec"]
-        self.mel_spec = MelSpectrogram(MelSpectrogramConfig())
+        self.mel_spec = MelSpectrogram(config())
 
         self.max_len = max_audio_length
         index = self._filter_records_from_dataset(index, limit)
@@ -39,6 +32,26 @@ class BaseDataset(Dataset):
 
     def __len__(self):
         return len(self._index)
+    
+    def __getitem__(self, ind):
+        data_dict = self._index[ind]
+
+        noisy_audio = self.load_audio(data_dict["noisy_path"])
+        clean_audio = self.load_audio(data_dict["clean_path"])
+
+        if self.max_len is not None and noisy_audio.shape[-1] > self.max_len:
+            ind = random.randint(0, noisy_audio.shape[-1] - self.max_len)
+            noisy_audio = noisy_audio[:, ind:ind + self.max_len]
+            clean_audio = clean_audio[:, ind:ind + self.max_len]
+
+        noisy_audio, noisy_spec = self.process_wave(noisy_audio)
+        clean_audio, clean_spec = self.process_wave(clean_audio)
+        return {
+            "audio": noisy_audio,
+            "spectrogram": noisy_spec,
+            "target_audio": clean_audio,
+            "target_spectrogram": clean_spec
+        }
 
     def load_audio(self, path):
         audio_tensor, sr = torchaudio.load(path)
@@ -67,5 +80,22 @@ class BaseDataset(Dataset):
         return index
 
     @staticmethod
-    def collate_fn():
-        raise NotImplementedError()
+    def collate_fn(dataset_items: List[dict]):
+        """
+        Collate and pad fields in dataset items
+        """
+        spectrogram, audio = [], []
+        target_spec, target_audio = [], []
+
+        for item in dataset_items:
+            audio.append(item["audio"].T)
+            target_audio.append(item["target_audio"].T)
+            spectrogram.append(item["spectrogram"].squeeze(0).T)
+            target_spec.append(item["target_spectrogram"].squeeze(0).T)
+
+        return {
+            "audio": pad_sequence(audio, batch_first=True).transpose(1, 2),
+            "target_audio": pad_sequence(target_audio, batch_first=True).transpose(1, 2),
+            "mel": pad_sequence(spectrogram, batch_first=True, padding_value=config.pad_value).transpose(1, 2),
+            "target_mel": pad_sequence(target_spec, batch_first=True, padding_value=config.pad_value).transpose(1, 2)
+        }
