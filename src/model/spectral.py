@@ -17,7 +17,7 @@ class SpectralMaskNet(nn.Module):
 
     def forward(self, x, spectral_out=None):
         window = torch.hann_window(self.n_fft).to(x.device)
-        spectrum = torch.stft(x, n_fft=self.n_fft, window=window, return_complex=False)
+        spectrum = torch.stft(x, n_fft=self.n_fft, window=window).view_as_real()
         magnitude = torch.sqrt((spectrum ** 2).sum(-1) + 1e-9).unsqueeze(1)
 
         if spectral_out is not None:
