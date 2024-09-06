@@ -28,7 +28,6 @@ class BaseTrainer:
         self.gen_lr_scheduler = gen_lr_scheduler
         self.dis_lr_scheduler = dis_lr_scheduler
 
-        # for interrupt saving
         self._last_epoch = 0
 
         cfg_trainer = config["trainer"]
@@ -36,7 +35,6 @@ class BaseTrainer:
         self.save_period = cfg_trainer["save_period"]
         self.monitor = cfg_trainer.get("monitor", "off")
 
-        # configuration to monitor model performance and save best
         if self.monitor == "off":
             self.mnt_mode = "off"
             self.mnt_best = 0
@@ -52,8 +50,6 @@ class BaseTrainer:
         self.start_epoch = 1
 
         self.checkpoint_dir = config.save_dir
-
-        # setup visualization writer instance
         self.writer = WanDBWriter(config, self.logger)
 
         if config.resume is not None:
@@ -87,22 +83,15 @@ class BaseTrainer:
         for epoch in range(self.start_epoch, self.epochs + 1):
             self._last_epoch = epoch
             result = self._train_epoch(epoch)
-
-            # save logged informations into log dict
             log = {"epoch": epoch}
             log.update(result)
 
-            # print logged informations to the screen
             for key, value in log.items():
                 self.logger.info("    {:15s}: {}".format(str(key), value))
 
-            # evaluate model performance according to configured metric,
-            # save best checkpoint as model_best
             best = False
             if self.mnt_mode != "off":
                 try:
-                    # check whether model performance improved or not,
-                    # according to specified metric(mnt_metric)
                     if self.mnt_mode == "min":
                         improved = log[self.mnt_metric] <= self.mnt_best
                     elif self.mnt_mode == "max":
@@ -186,7 +175,6 @@ class BaseTrainer:
         self.start_epoch = gen_checkpoint["epoch"] + 1
         self.mnt_best = gen_checkpoint["monitor_best"]
 
-        # load architecture params from checkpoint.
         if gen_checkpoint["config"]["generator"] != self.config["generator"] or gen_checkpoint["config"]["discriminator"] != self.config["discriminator"]:
             self.logger.warning(
                 "Warning: Architecture configuration given in config file is different from that "
@@ -195,7 +183,6 @@ class BaseTrainer:
         self.generator.load_state_dict(gen_checkpoint["state_dict"])
         self.discriminator.load_state_dict(dis_checkpoint["state_dict"])
 
-        # load optimizer state from checkpoint only when optimizer type is not changed.
         if (
                 gen_checkpoint["config"]["gen_optimizer"] != self.config["gen_optimizer"] or
                 gen_checkpoint["config"]["gen_lr_scheduler"] != self.config["gen_lr_scheduler"]
@@ -245,7 +232,6 @@ class BaseTrainer:
         self.start_epoch = gen_checkpoint["epoch"] + 1
         self.mnt_best = gen_checkpoint["monitor_best"]
 
-        # load architecture params from checkpoint.
         if gen_checkpoint["config"]["generator"] != self.config["generator"] or gen_checkpoint["config"]["discriminator"] != self.config["discriminator"]:
             self.logger.warning(
                 "Warning: Architecture configuration given in config file is different from that "
