@@ -6,7 +6,7 @@ https://github.com/santi-pdp/segan_pytorch/blob/master/segan/utils.py
 import numpy as np
 from scipy.linalg import toeplitz
 
-from src.metric import *
+from src.metric.metrics import *
 
 
 class CompositeEval:
