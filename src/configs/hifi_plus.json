@@ -26,8 +26,7 @@
           32
         ],
         "scale": 2,
-        "bottleneck_width": 64,
-        "block_depth": 5
+        "bottleneck_width": 64
       },
       "generator_params": {
         "prolog_params": {
