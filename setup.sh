@@ -1,5 +1,6 @@
 echo "Install requirements"
 pip install -q -r requirements.txt
+pip install -q gdown
 
 echo "Download checkpoints"
 mkdir checkpoints
@@ -9,11 +10,11 @@ unzip -q checkpoints.zip
 
 # checkpoints
 #  - hifi_official
-#  - hifi_plusplus  (100 эпох)
-#  - hifi_wo_spec   (80 эпох)
-#  - hifi_mrf       (80 эпох)
-#  - hifi_fms       (90 эпох)
-#  - hifi_mrf_fms   (120 эпох)
+#  - hifi_plusplus  (110 эпох)
+#  - hifi_wo_spec   (100 эпох)
+#  - hifi_mrf       (97 эпох)
+#  - hifi_fms       (120 эпох)
+#  - hifi_mrf_fms   (150 эпох)
 
 #  - hifi_stream           (60 эпох)
 #  - hifi_noise_stream     (30 эпох)
