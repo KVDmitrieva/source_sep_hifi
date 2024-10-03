@@ -143,7 +143,7 @@ class Inferencer:
             for key, val in metrics_score.items():
                 print(f"{key}: {val / len(files):.3f}")
 
-        with (out_dir / "result.txt").open("w") as f:
+        with (out_dir / "result.json").open("w") as f:
             json.dump(results, f, indent=2)
 
     def validate_json(self, json_path: str, out_dir: str = "output", verbose=True):
@@ -174,7 +174,7 @@ class Inferencer:
             for key, val in metrics_score.items():
                 print(f"{key}: {val / len(pairs):.3f}")
 
-        with open(f"{out_dir}/result.txt", "w") as f:
+        with open(f"{out_dir}/result.json", "w") as f:
             json.dump(results, f, indent=2)
 
     @staticmethod

@@ -5,15 +5,15 @@ pip install -q gdown
 echo "Download checkpoints"
 mkdir checkpoints
 
-gdown --fuzzy "https://drive.google.com/file/d/16KpApVF5hw49frm5ckm1fgJprBkGhJOp/view?usp=sharing" -O checkpoints.zip
+gdown --fuzzy "https://drive.google.com/file/d/1B3U3FYmqpL5iAYs74eeY8SBeZgI9GqE1/view?usp=drive_link" -O checkpoints.zip
 unzip -q checkpoints.zip
 
 # checkpoints
 #  - hifi_official
-#  - hifi_plusplus  (110 эпох)
-#  - hifi_wo_spec   (100 эпох)
-#  - hifi_mrf       (97 эпох)
-#  - hifi_fms       (120 эпох)
+#  - hifi_plusplus  (150 эпох)
+#  - hifi_wo_spec   (150 эпох)
+#  - hifi_mrf       (150 эпох)
+#  - hifi_fms       (150 эпох)
 #  - hifi_mrf_fms   (150 эпох)
 
 #  - hifi_stream           (60 эпох)
