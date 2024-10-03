@@ -5,7 +5,7 @@ pip install -q gdown
 echo "Download checkpoints"
 mkdir checkpoints
 
-gdown --fuzzy "https://drive.google.com/file/d/1B3U3FYmqpL5iAYs74eeY8SBeZgI9GqE1/view?usp=drive_link" -O checkpoints.zip
+gdown --fuzzy "https://drive.google.com/file/d/11DEZuCMOLWvTJEHvDqg3I4EBoKVuSpOF/view?usp=drive_link" -O checkpoints.zip
 unzip -q checkpoints.zip
 
 # checkpoints
