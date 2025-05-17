@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.utils import weight_norm, spectral_norm
+from torch.nn.utils.parametrizations import weight_norm, spectral_norm
 
 from src.model.base_model import BaseModel
 from src.model.utils import init_weights

@@ -1,25 +1,43 @@
-# Speech Enhancement project
+# HiFi-Stream: Streaming Speech Enhancement with Generative Adversarial Networks
+
+
+This is an official implementation of paper [HiFi-Stream: Streaming Speech Enhancement with Generative Adversarial Networks](https://arxiv.org/pdf/2503.17141).
 
 ## Installation guide
 Run
 ```shell
+git clone https://github.com/KVDmitrieva/source_sep_hifi
+cd source_sep_hifi
+python -m venv hifi_stream_env
+. hifi_stream_env/bin/activate
 pip install -r requirements.txt
 ```
-to install all libs.
+to install all libs
 
-## Train running guide
-All configs can be found in the `src/configs` directory. 
+## Training guide
+
+### Configuration
+All configuration files are located in `src/configs` directory
+
+### Running Training
 Training can be launched with the following command:
 ```shell
 python3 train.py -c src/configs/CONFIG_NAME.json 
 ```
+**Note**: Update the data paths in the relevant config file (`CONFIG_NAME.json`) before running
 
-In order to resume training from checkpoint, use
+
+### Resuming from a Checkpoint
+To resume training from a saved checkpoint, run:
 
 ```shell
 python3 train.py -c src/configs/CONFIG_NAME.json -r PATH/TO/CHECKPOINT/generator.pth
 ```
-note that `PATH/TO/CHECKPOINT/` directory should contain discriminator checkpoint (`discriminator.pth`) and `config.json`
+**requirements for resuming:**
+The checkpoint directory (`PATH/TO/CHECKPOINT/`) must include:
+- Generator weights: `generator.pth`
+- Discriminator weights: `discriminator.pth`
+- Config file: `config.json`
 
 
 ## Test running guide
@@ -27,7 +45,7 @@ Download all available checkpoints and test data with `setup.sh`:
 ```shell
 ./setup.sh
 ```
-Run test with:
+Inference can be launched with the following command:
 
 ```shell
 python3 test.py -c MODEL_CONFIG.json \

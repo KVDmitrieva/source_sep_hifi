@@ -1,5 +1,9 @@
 from torch import Tensor, tensor, no_grad
-from torchmetrics.audio import PerceptualEvaluationSpeechQuality, SignalDistortionRatio, ScaleInvariantSignalDistortionRatio, ShortTimeObjectiveIntelligibility
+
+from torchmetrics import ScaleInvariantSignalDistortionRatio
+from torchmetrics.audio import SignalDistortionRatio
+from torchmetrics.audio.pesq import PerceptualEvaluationSpeechQuality
+from torchmetrics.audio.stoi import ShortTimeObjectiveIntelligibility
 
 from wvmos import get_wvmos
 
