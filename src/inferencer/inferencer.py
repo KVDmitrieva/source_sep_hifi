@@ -10,7 +10,7 @@ import torchaudio
 
 import src.model as module_model
 from src.datasets.utils import MelSpectrogram, MelSpectrogramConfig
-from src.metric import WMOSMetric, CompositeEval
+from src.metric import CompositeEval
 
 
 class Inferencer:
@@ -34,7 +34,7 @@ class Inferencer:
         self.mel_spec = MelSpectrogram(MelSpectrogramConfig())
         self.target_sr = config["preprocessing"]["sr"]
 
-        self.wmos = WMOSMetric() if torch.cuda.is_available() else None
+        self.wmos = None
         self.composite_eval = CompositeEval(self.target_sr)
 
         self.segment_size = segment_size

@@ -4,29 +4,10 @@ from torchmetrics.audio import SignalDistortionRatio, ScaleInvariantSignalDistor
 from torchmetrics.audio.pesq import PerceptualEvaluationSpeechQuality
 from torchmetrics.audio.stoi import ShortTimeObjectiveIntelligibility
 
-from wvmos import get_wvmos
-
 from src.metric.base_metric import BaseMetric
 
 
-__all__ = ['WMOSMetric', 'PESQMetric', 'SDRMetric', 'SISDRMetric', 'STOIMetric']
-
-
-class WMOSMetric(BaseMetric):
-    def __init__(self, cuda=True, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.model = get_wvmos(cuda=cuda)
-
-    def __call__(self, generator_audio: Tensor, **kwargs):
-        x = generator_audio.detach()
-        x = self.model.processor(x, return_tensors="pt", padding=True, sampling_rate=16000).input_values
-        x = x.squeeze()
-        if x.dim() == 1:
-            x = x.unsqueeze(0)
-
-        with no_grad():
-            res = self.model.forward(x.to(generator_audio.device)).mean()
-        return res.cpu().item()
+__all__ = ['PESQMetric', 'SDRMetric', 'SISDRMetric', 'STOIMetric']
 
 
 class PESQMetric(BaseMetric):

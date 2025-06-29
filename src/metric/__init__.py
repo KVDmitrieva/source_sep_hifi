@@ -6,6 +6,5 @@ __all__ = [
     "SDRMetric",
     "SISDRMetric",
     "STOIMetric",
-    "WMOSMetric",
     "CompositeEval"
 ]
