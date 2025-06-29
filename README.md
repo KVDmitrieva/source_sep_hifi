@@ -34,6 +34,7 @@ To resume training from a saved checkpoint, run:
 python3 train.py -c src/configs/CONFIG_NAME.json -r PATH/TO/CHECKPOINT/generator.pth
 ```
 **requirements for resuming:**
+
 The checkpoint directory (`PATH/TO/CHECKPOINT/`) must include:
 - Generator weights: `generator.pth`
 - Discriminator weights: `discriminator.pth`
@@ -71,4 +72,15 @@ python3 streaming_test.py -c checkpoints/hifi_plusplus/config.json \
                             -n data/noisy_testset_wav \
                             -t data/clean_testset_wav \
                             -m "overlap_add"
+```
+
+# Config directory structure
+```
+├── ablation                     # Configs for additional experiments
+├── one_batch                    # One-batch debug configs
+├── hifi_plus.json               # Config for HiFi++ (reprod.) model
+├── hifi_plus_wo_spec.json       # Config for HiFi w/o spec model
+├── hifi_2d_mrf.json             # Config for HiFi-2dMRF model
+├── hifi_fms.json                # Config for HiFi-Stream model
+└── hifi_2d_mrf_fms.json         # Config for HiFi-Stream2D model
 ```

@@ -8,23 +8,6 @@ mkdir checkpoints
 gdown --fuzzy "https://drive.google.com/file/d/11DEZuCMOLWvTJEHvDqg3I4EBoKVuSpOF/view?usp=drive_link" -O checkpoints.zip
 unzip -q checkpoints.zip
 
-# checkpoints
-#  - hifi_official
-#  - hifi_plusplus  (150 эпох)
-#  - hifi_wo_spec   (150 эпох)
-#  - hifi_mrf       (150 эпох)
-#  - hifi_fms       (150 эпох)
-#  - hifi_mrf_fms   (150 эпох)
-
-#  - hifi_stream           (60 эпох)
-#  - hifi_noise_stream     (30 эпох)
-#  - hifi_mrf_stream       (80 эпох)
-#  - hifi_wo_spec_stream   (80 эпох)
-#  - hifi_fms_stream       (70 эпох)
-#  - hifi_mrf_fms_stream   (20 эпох)
-
-# - hifi_context           (20 эпох)
-
 
 echo "Download vctk test"
 mkdir data
